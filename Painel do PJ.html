@@ -49,6 +49,7 @@ select.charsel{background:var(--parch-3);border:1px solid var(--line-2);border-r
 .btn:active{transform:translateY(1px)}
 .btn.prim{background:var(--verm-d);border-color:var(--verm);color:#fdf6e8}
 .btn.prim:hover{background:var(--verm)}
+.btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
 .btn.ghost{background:transparent}
 .btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7}
 .tabs{display:flex;gap:4px;margin:22px 0;border-bottom:1px solid var(--line-2);flex-wrap:wrap}
@@ -124,6 +125,17 @@ textarea.fld{resize:vertical;min-height:64px;line-height:1.5}
 .pool-ctrls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .step{width:30px;height:30px;border-radius:8px;border:1px solid var(--line-2);background:var(--parch-3);color:var(--ink);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center}
 .step:hover{background:#fff;border-color:var(--brass-d)}
+.step.effort{width:auto;padding:0 9px;font-family:"Cinzel",serif;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass-d);border-color:var(--brass)}
+.step.effort:hover{background:rgba(156,123,60,.10)}
+.effort-stepper{display:flex;align-items:center;gap:8px}
+.effort-stepper .n{font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:700;min-width:28px;text-align:center}
+.effort-stepper .mx{font-size:12px;color:var(--ink-faint)}
+.effort-math{background:var(--parch-3);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.effort-math .line{display:flex;justify-content:space-between;gap:16px;font-size:14.5px}
+.effort-math .line .k{color:var(--ink-soft)}
+.effort-math .line .v{font-family:"JetBrains Mono",monospace;font-weight:700}
+.effort-math .pay{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;font-weight:600}
+.effort-math .hint{margin-top:8px;font-size:12px;color:var(--ink-faint);font-style:italic}
 .pool-ctrls .miniedit{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em}
 .pool-ctrls .miniedit input{width:44px;background:var(--parch-3);border:1px solid var(--line);border-radius:7px;text-align:center;font-family:"JetBrains Mono",monospace;font-weight:700;padding:5px 2px;font-size:14px}
 .dmgtrack{display:flex;flex-direction:column;gap:9px}
@@ -436,6 +448,17 @@ textarea.fld{resize:vertical;min-height:64px;line-height:1.5}
   </div>
 </div>
 
+<div class="modal-back" id="effortback" onclick="App.effortBackClick(event)">
+  <div class="modal">
+    <div class="modal-head"><h4 id="effort-title">Gastar esforço</h4><button class="x" onclick="App.closeEffort()">✕</button></div>
+    <div class="modal-body" id="effort-body"></div>
+    <div class="modal-foot">
+      <button class="btn ghost" type="button" onclick="App.closeEffort()">Cancelar</button>
+      <button class="btn prim" type="button" id="effort-go" onclick="App.spendEffort()">Gastar</button>
+    </div>
+  </div>
+</div>
+
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast"></div>
 <script>
@@ -501,7 +524,27 @@ let DB={list:{},current:null};
 let saveTimer=null;
 let EDIT={key:null,i:-1};
 let snapId=null,snap=null,pendingNotes=[];
+let EFFORT={stat:null,levels:1,extra:0};
 const HIST_MAX=400;
+function rawEffortCost(levels){levels=Math.max(0,levels|0);return levels<=0?0:3+2*(levels-1)}
+function effortPaid(levels,edge,debilitated,extra){
+  extra=Math.max(0,extra|0);
+  return Math.max(0,extra+rawEffortCost(levels)-(edge|0)+(debilitated?1:0));
+}
+function effortNote(stat,levels,extra,edge,debilitated,paid){
+  const label=POOL_NAME[stat];
+  const n=Math.max(0,levels|0);
+  extra=Math.max(0,extra|0);
+  const total=extra+rawEffortCost(n);
+  let head;
+  if(n<=0)head='Custo de habilidade em '+label+(extra?' (+'+extra+')':'');
+  else head='Usou '+(n===1?'1 esforço':n+' esforços')+' em '+label+(extra?' (habilidade +'+extra+')':'');
+  let math=String(total);
+  if(edge)math+=' − margem '+edge;
+  if(debilitated)math+=' + debilitado 1';
+  math+=' = '+(paid?('−'+paid):'0');
+  return head+': '+math;
+}
 
 function load(){
   try{const raw=localStorage.getItem(STORE);if(raw)DB=JSON.parse(raw)}catch(e){}
@@ -685,6 +728,71 @@ const App={
   adjust:function(stat,d){const p=cur().pools[stat];p.cur=Math.max(0,Math.min(p.max,p.cur+d));this.autoDamage();commit();this.renderPools()},
   setMax:function(stat,v){const p=cur().pools[stat];p.max=Math.max(0,v|0);if(p.cur>p.max)p.cur=p.max;this.autoDamage();commit();this.renderPools()},
   setEdge:function(stat,v){cur().pools[stat].edge=Math.max(0,v|0);commit();this.renderPools()},
+  openEffort:function(stat){
+    const c=cur();const p=c.pools[stat];if(!p)return;
+    const maxE=Math.max(0,c.effort|0);
+    EFFORT={stat:stat,levels:maxE>0?1:0,extra:0};
+    document.getElementById('effort-title').textContent='Esforço · '+POOL_NAME[stat];
+    document.getElementById('effort-body').innerHTML=
+      '<div class="mfield"><label>Níveis de esforço</label><div class="effort-stepper">'+
+      '<button class="step" type="button" onclick="App.nudgeEffort(-1)">−</button>'+
+      '<span class="n" id="effort-n">1</span>'+
+      '<button class="step" type="button" onclick="App.nudgeEffort(1)">+</button>'+
+      '<span class="mx" id="effort-max"></span></div></div>'+
+      '<div class="mfield"><label>Custo extra da habilidade</label>'+
+      '<input id="effort-extra" class="fld" type="number" min="0" value="0" oninput="App.setEffortExtra(+this.value||0)"></div>'+
+      '<div class="effort-math" id="effort-math"></div>';
+    document.getElementById('effortback').classList.add('show');
+    this.refreshEffort();
+  },
+  closeEffort:function(){document.getElementById('effortback').classList.remove('show');EFFORT.stat=null},
+  effortBackClick:function(e){if(e.target.id==='effortback')this.closeEffort()},
+  nudgeEffort:function(d){
+    const maxE=Math.max(0,cur().effort|0);
+    EFFORT.levels=Math.max(0,Math.min(maxE,EFFORT.levels+d));
+    this.refreshEffort();
+  },
+  setEffortExtra:function(v){EFFORT.extra=Math.max(0,v|0);this.refreshEffort()},
+  refreshEffort:function(){
+    if(!EFFORT.stat)return;
+    const c=cur();const p=c.pools[EFFORT.stat];
+    const maxE=Math.max(0,c.effort|0);
+    const deb=c.damage===1;
+    const raw=rawEffortCost(EFFORT.levels);
+    const paid=effortPaid(EFFORT.levels,p.edge,deb,EFFORT.extra);
+    const nEl=document.getElementById('effort-n');if(nEl)nEl.textContent=EFFORT.levels;
+    const mEl=document.getElementById('effort-max');if(mEl)mEl.textContent=maxE?'máx. '+maxE:'sem esforço';
+    const math=document.getElementById('effort-math');
+    if(math){
+      const lines=[];
+      if(EFFORT.levels)lines.push(['Esforço ('+EFFORT.levels+')','+'+raw]);
+      if(EFFORT.extra)lines.push(['Habilidade','+'+EFFORT.extra]);
+      if(!lines.length)lines.push(['Custo','0']);
+      if(p.edge)lines.push(['Margem','−'+p.edge]);
+      if(deb)lines.push(['Debilitado','+1']);
+      math.innerHTML=lines.map(function(r){return '<div class="line"><span class="k">'+esc(r[0])+'</span><span class="v">'+esc(r[1])+'</span></div>'}).join('')+
+        '<div class="pay"><span>A pagar em '+esc(POOL_NAME[EFFORT.stat])+'</span><span>'+paid+'</span></div>'+
+        '<div class="hint">O primeiro nível custa 3; cada extra custa 2. A margem reduz o total.</div>';
+    }
+    const go=document.getElementById('effort-go');
+    if(go){
+      const empty=EFFORT.levels<=0&&EFFORT.extra<=0;
+      go.disabled=empty;
+      go.textContent=empty?'Gastar':(paid?('Gastar · −'+paid):'Gastar · sem custo');
+    }
+  },
+  spendEffort:function(){
+    if(!EFFORT.stat)return;
+    const c=cur();const stat=EFFORT.stat;const p=c.pools[stat];
+    if(EFFORT.levels<=0&&EFFORT.extra<=0){toast('Nada para gastar');return}
+    const deb=c.damage===1;
+    const paid=effortPaid(EFFORT.levels,p.edge,deb,EFFORT.extra);
+    if(paid>p.cur){toast(POOL_NAME[stat]+' insuficiente (precisa '+paid+', tem '+p.cur+')');return}
+    noteChange(effortNote(stat,EFFORT.levels,EFFORT.extra,p.edge,deb,paid));
+    p.cur=Math.max(0,p.cur-paid);
+    this.autoDamage();commit();this.renderPools();this.closeEffort();
+    toast(paid?('−'+paid+' de '+POOL_NAME[stat]):('Esforço sem custo'));
+  },
 
   setDamage:function(i){cur().damage=i;commit();this.renderDamage()},
   autoDamage:function(){const c=cur();c.damage=['might','speed','intellect'].filter(function(s){return c.pools[s].cur<=0}).length;this.renderDamage()},
@@ -762,7 +870,7 @@ const App={
     else{if(img)img.remove();ph.style.display='flex';box.classList.remove('has')}},
   renderPools:function(){const c=cur();let html='';STATS.forEach(function(arr){const key=arr[0],label=arr[1],cssv=arr[2];const p=c.pools[key];const R=40,C=2*Math.PI*R;const pct=p.max>0?p.cur/p.max:0;const off=C*(1-pct);const color='var('+cssv+')';
     html+='<div class="pool"><div class="gauge"><svg viewBox="0 0 96 96"><circle class="track" cx="48" cy="48" r="'+R+'" fill="none" stroke-width="8"/><circle class="fill" cx="48" cy="48" r="'+R+'" fill="none" stroke="'+color+'" stroke-width="8" stroke-dasharray="'+C+'" stroke-dashoffset="'+off+'"/></svg><div class="ctr"><span class="cur" style="color:'+color+'">'+p.cur+'</span><span class="mx">/ '+p.max+'</span></div></div>'+
-      '<div class="pool-info"><span class="pool-name">'+label+'</span><div class="pool-ctrls"><button class="step" onclick="App.adjust(\''+key+'\',-1)">−</button><button class="step" onclick="App.adjust(\''+key+'\',1)">+</button><span class="miniedit">Reserva <input type="number" value="'+p.max+'" min="0" onchange="App.setMax(\''+key+'\',+this.value)"></span><span class="miniedit">Margem <input type="number" value="'+p.edge+'" min="0" onchange="App.setEdge(\''+key+'\',+this.value)"></span></div></div></div>'});
+      '<div class="pool-info"><span class="pool-name">'+label+'</span><div class="pool-ctrls"><button class="step" onclick="App.adjust(\''+key+'\',-1)">−</button><button class="step" onclick="App.adjust(\''+key+'\',1)">+</button><button class="step effort" type="button" onclick="App.openEffort(\''+key+'\')" title="Gastar esforço nesta Reserva">Esforço</button><span class="miniedit">Reserva <input type="number" value="'+p.max+'" min="0" onchange="App.setMax(\''+key+'\',+this.value)"></span><span class="miniedit">Margem <input type="number" value="'+p.edge+'" min="0" onchange="App.setEdge(\''+key+'\',+this.value)"></span></div></div></div>'});
     document.getElementById('pools').innerHTML=html},
   renderDamage:function(){const c=cur();const states=[["Saudável","Plena capacidade"],["Debilitado","Uma Reserva zerada"],["Incapacitado","Duas Reservas zeradas"],["Morto","Três Reservas zeradas"]];
     const notes=["Todas as Reservas com pontos.","Esforço custa 1 ponto a mais.","Só ações muito limitadas.","Os três Pools chegaram a 0."];
@@ -808,7 +916,7 @@ const App={
 document.getElementById('dl-desc').innerHTML=DESCRIPTORS.map(function(d){return '<option value="'+esc(d)+'">'}).join('');
 document.getElementById('dl-focus').innerHTML=FOCI.map(function(f){return '<option value="'+esc(f)+'">'}).join('');
 var dlsk=document.createElement('datalist');dlsk.id='dl-skills';dlsk.innerHTML=SKILLS_SUGG.map(function(s){return '<option value="'+esc(s)+'">'}).join('');document.body.appendChild(dlsk);
-document.addEventListener('keydown',function(e){if(e.key==='Escape')App.closeModal()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){App.closeEffort();App.closeModal()}});
 window.addEventListener('pagehide',function(){commit()});
 
 load();
