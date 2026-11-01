@@ -205,6 +205,16 @@ textarea.fld{resize:vertical;min-height:64px;line-height:1.5}
 .foot{margin-top:32px;text-align:center;font-size:12px;color:var(--ink-faint)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);border:1px solid var(--brass);color:var(--parch-3);padding:11px 20px;border-radius:var(--r);font-size:14px;opacity:0;transition:.25s;z-index:400;box-shadow:0 10px 40px rgba(39,53,92,.4)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.history-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.history-bar .ptitle{flex:1;min-width:200px;margin:0}
+.history-bar .ptitle #history-count{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:0;color:var(--ink-faint);text-transform:none}
+.history-lead{margin:10px 0 14px;font-size:13.5px;color:var(--ink-soft);font-style:italic}
+.history{display:flex;flex-direction:column;gap:10px}
+.hentry{background:var(--parch-3);border:1px solid var(--line);border-left:3px solid var(--brass);border-radius:var(--r);padding:10px 12px 10px 14px}
+.hentry:first-child{border-left-color:var(--verm)}
+.hentry .when{font-family:"JetBrains Mono",monospace;font-size:11.5px;letter-spacing:.03em;color:var(--brass-d)}
+.hentry ul{margin:6px 0 0;padding-left:18px}
+.hentry li{font-size:14.5px;line-height:1.45}
 @media(max-width:1040px){.grid{grid-template-columns:1fr}.hero{grid-template-columns:170px 1fr}}
 @media(max-width:760px){.gearbar{grid-template-columns:1fr}}
 @media(max-width:640px){.hero{grid-template-columns:1fr}.portrait{aspect-ratio:16/10;max-height:230px;width:60%;margin:0 auto}.twocol,.story-grid{grid-template-columns:1fr}.subcol{gap:24px}.dtf{grid-template-columns:1fr}.meta{flex-wrap:wrap}.meta .box{flex:1 1 28%}.brand h1{font-size:18px}}
@@ -256,6 +266,7 @@ textarea.fld{resize:vertical;min-height:64px;line-height:1.5}
     <button class="tab active" data-tab="painel" onclick="App.switchTab('painel')">Painel</button>
     <button class="tab" data-tab="historia" onclick="App.switchTab('historia')">História</button>
     <button class="tab" data-tab="notas" onclick="App.switchTab('notas')">Notas</button>
+    <button class="tab" data-tab="historico" onclick="App.switchTab('historico')">Histórico</button>
   </div>
 
   <section id="tab-painel" class="tabsec">
@@ -403,7 +414,18 @@ textarea.fld{resize:vertical;min-height:64px;line-height:1.5}
     </div>
   </section>
 
-  <div class="foot">Salvo automaticamente neste navegador · Numenéra © Monte Cook Games · ferramenta não-oficial de fã para uso em mesa</div>
+  <section id="tab-historico" class="tabsec" hidden>
+    <div class="panel">
+      <div class="history-bar">
+        <h3 class="ptitle"><svg class="ic" viewBox="0 0 24 24"><path d="M6 4h9l3 3v13H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Histórico<span id="history-count"></span></h3>
+        <button class="btn ghost" type="button" onclick="App.clearHistory()">Limpar</button>
+      </div>
+      <p class="history-lead">Cada alteração desta ficha fica registrada aqui, da mais recente para a mais antiga.</p>
+      <div class="history" id="history-list"></div>
+    </div>
+  </section>
+
+  <div class="foot">Salvo automaticamente neste navegador · cada alteração entra no Histórico · Numenéra © Monte Cook Games · ferramenta não-oficial de fã para uso em mesa</div>
 </div>
 
 <div class="modal-back" id="modalback" onclick="App.modalBackClick(event)">
@@ -472,62 +494,223 @@ function blank(){return{
   recovery:{used:[false,false,false,false]},damage:0,
   skills:[],weapons:[],armors:[],attacks:[],abilities:[],
   cypherLimit:2,cyphers:[],artifacts:[],equipment:[],buffs:[],
-  other:"",background:"",goal:"",notes:""
+  other:"",background:"",goal:"",notes:"",history:[]
 }}
 
 let DB={list:{},current:null};
 let saveTimer=null;
 let EDIT={key:null,i:-1};
+let snapId=null,snap=null,pendingNotes=[];
+const HIST_MAX=400;
 
 function load(){
   try{const raw=localStorage.getItem(STORE);if(raw)DB=JSON.parse(raw)}catch(e){}
-  if(!DB.list||!Object.keys(DB.list).length){const c=blank();c.name="Novo Aventureiro";DB.list={};DB.list[c.id]=c;DB.current=c.id}
+  if(!DB.list||!Object.keys(DB.list).length){const c=blank();c.name="Novo Aventureiro";c.history=[{t:Date.now(),lines:["Personagem criado"]}];DB.list={};DB.list[c.id]=c;DB.current=c.id}
   if(!DB.list[DB.current])DB.current=Object.keys(DB.list)[0];
-  for(const id in DB.list){const c=DB.list[id];["skills","weapons","armors","attacks","abilities","cyphers","artifacts","equipment","buffs"].forEach(function(k){if(!Array.isArray(c[k]))c[k]=[]});["other","background","goal","notes"].forEach(function(k){if(c[k]==null)c[k]=""});if(c.shins==null)c.shins=0}
+  for(const id in DB.list){const c=DB.list[id];["skills","weapons","armors","attacks","abilities","cyphers","artifacts","equipment","buffs"].forEach(function(k){if(!Array.isArray(c[k]))c[k]=[]});["other","background","goal","notes"].forEach(function(k){if(c[k]==null)c[k]=""});if(c.shins==null)c.shins=0;if(!Array.isArray(c.history))c.history=[]}
 }
-function persist(){try{localStorage.setItem(STORE,JSON.stringify(DB))}catch(e){toast("Não foi possível salvar (armazenamento cheio?)")}}
+function writeDB(){try{localStorage.setItem(STORE,JSON.stringify(DB))}catch(e){toast("Não foi possível salvar (armazenamento cheio?)")}}
+function persist(){try{recordChanges()}catch(err){console.error(err)}writeDB();try{App.renderHistory()}catch(err){}}
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(persist,400)}
+function commit(){clearTimeout(saveTimer);saveTimer=null;persist()}
 function cur(){return DB.list[DB.current]}
 function esc(s){return(s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._tm);t._tm=setTimeout(function(){t.classList.remove('show')},1900)}
 
+function noteChange(line){if(line)pendingNotes.push(line)}
+function snapshotOf(c){const o=JSON.parse(JSON.stringify(c));delete o.history;return o}
+function same(a,b){return JSON.stringify(a)===JSON.stringify(b)}
+function changed(a,b){
+  if(a===b)return false;
+  if((a==null||a==='')&&(b==null||b===''))return false;
+  if(a!=null&&b!=null&&typeof a!=='object'&&typeof b!=='object'&&String(a)===String(b))return false;
+  return true;
+}
+function clip(v){const s=String(v==null?'':v).replace(/\s+/g,' ').trim();if(!s)return '';return s.length>80?s.slice(0,77)+'…':s}
+function num(v){if(typeof v==='number')return v;if(typeof v==='string'&&v.trim()!==''&&isFinite(Number(v)))return Number(v);return v}
+function showVal(v){
+  if(v==null||v==='')return '—';
+  if(typeof v==='number'&&isFinite(v))return String(v);
+  if(typeof v==='boolean')return v?'sim':'não';
+  const s=clip(v);return s?'«'+s+'»':'—';
+}
+function showField(f,v){
+  if(f&&f.t==='num'){if(v==null||String(v).trim()==='')return '—';return showVal(num(v))}
+  return showVal(v);
+}
+function trimHistory(c){if(c.history.length>HIST_MAX)c.history.splice(0,c.history.length-HIST_MAX)}
+function recordChanges(){
+  const c=cur();if(!c)return;
+  if(!Array.isArray(c.history))c.history=[];
+  if(snapId!==c.id||!snap){
+    snapId=c.id;snap=snapshotOf(c);
+    if(pendingNotes.length){c.history.push({t:Date.now(),lines:pendingNotes.slice()});pendingNotes=[];trimHistory(c)}
+    return;
+  }
+  const next=snapshotOf(c);
+  const lines=diffChar(snap,next);
+  const merged=pendingNotes.concat(lines).filter(Boolean);
+  pendingNotes=[];
+  if(merged.length){c.history.push({t:Date.now(),lines:merged});trimHistory(c)}
+  snap=next;
+}
+const SCALAR_LABELS={
+  name:'Nome',descriptor:'Descritor',type:'Tipo',focus:'Foco',
+  tier:'Grau',effort:'Esforço',xp:'XP',shins:'Shins',cypherLimit:'Limite de cifras',
+  other:'Outros',background:'Antecedente',goal:'Objetivo pessoal',notes:'Notas'
+};
+const POOL_NAME={might:'Potência',speed:'Velocidade',intellect:'Intelecto'};
+const DMG_NAME=['Saudável','Debilitado','Incapacitado','Morto'];
+const LIST_KEYS=['weapons','armors','attacks','abilities','cyphers','artifacts','equipment','buffs'];
+function findInsert(before,after){
+  if(after.length!==before.length+1)return -1;
+  for(let i=0;i<after.length;i++){if(same(after.slice(0,i).concat(after.slice(i+1)),before))return i}
+  return -1;
+}
+function findRemove(before,after){
+  if(before.length!==after.length+1)return -1;
+  for(let i=0;i<before.length;i++){if(same(before.slice(0,i).concat(before.slice(i+1)),after))return i}
+  return -1;
+}
+function itemTitle(o){const n=o&&o.name!=null?String(o.name).trim():'';return n||'sem nome'}
+function skillLevelLabel(v){if(v==='T')return 'Treinado';if(v==='E')return 'Especializado';return 'sem treinamento'}
+function pushSkillAdded(s,lines){
+  const name=(s&&s.name||'').trim();
+  let line='Adicionou perícia'+(name?' '+showVal(name):'');
+  if(s&&s.level)line+=' ('+skillLevelLabel(s.level)+')';
+  lines.push(line);
+}
+function diffSkills(before,after,lines){
+  const ins=findInsert(before,after);
+  if(ins>=0){pushSkillAdded(after[ins],lines);return}
+  const rem=findRemove(before,after);
+  if(rem>=0){lines.push('Removeu perícia '+showVal(before[rem].name||'sem nome'));return}
+  const n=Math.min(before.length,after.length);
+  for(let i=0;i<n;i++){
+    if(same(before[i],after[i]))continue;
+    const b=before[i],a=after[i];
+    const who=a.name||b.name||'sem nome';
+    if(changed(b.name,a.name))lines.push('Perícia «'+clip(who)+'» · Nome: '+showVal(b.name)+' → '+showVal(a.name));
+    if(changed(b.level,a.level))lines.push('Perícia «'+clip(who)+'»: '+skillLevelLabel(b.level)+' → '+skillLevelLabel(a.level));
+  }
+  for(let i=n;i<after.length;i++)pushSkillAdded(after[i],lines);
+  for(let i=n;i<before.length;i++)lines.push('Removeu perícia '+showVal(before[i].name||'sem nome'));
+}
+function pushItemFields(key,item,lines,title){
+  const cfg=LISTS[key];
+  (cfg.fields||[]).forEach(function(f){
+    if(f.k==='name')return;
+    if(!changed(cfg.blank[f.k],item[f.k]))return;
+    lines.push(cfg.label+' «'+clip(title)+'» · '+f.l+': '+showField(f,item[f.k]));
+  });
+}
+function diffList(key,before,after,lines){
+  const cfg=LISTS[key];
+  const ins=findInsert(before,after);
+  if(ins>=0){
+    const item=after[ins],title=itemTitle(item);
+    lines.push('Adicionou '+cfg.label+(title!=='sem nome'?' '+showVal(title):''));
+    pushItemFields(key,item,lines,title);
+    return;
+  }
+  const rem=findRemove(before,after);
+  if(rem>=0){lines.push('Removeu '+cfg.label+' '+showVal(itemTitle(before[rem])));return}
+  const n=Math.min(before.length,after.length);
+  for(let i=0;i<n;i++){
+    if(same(before[i],after[i]))continue;
+    const b=before[i],a=after[i];
+    const title=itemTitle(a.name?a:b);
+    (cfg.fields||[]).forEach(function(f){
+      if(!changed(b[f.k],a[f.k]))return;
+      const shown=f.k==='name'?itemTitle(b.name?b:a):title;
+      lines.push(cfg.label+' «'+clip(shown)+'» · '+f.l+': '+showField(f,b[f.k])+' → '+showField(f,a[f.k]));
+    });
+  }
+  for(let i=n;i<after.length;i++){
+    const title=itemTitle(after[i]);
+    lines.push('Adicionou '+cfg.label+(title!=='sem nome'?' '+showVal(title):''));
+    pushItemFields(key,after[i],lines,title);
+  }
+  for(let i=n;i<before.length;i++)lines.push('Removeu '+cfg.label+' '+showVal(itemTitle(before[i])));
+}
+function diffChar(before,after){
+  const lines=[];
+  Object.keys(SCALAR_LABELS).forEach(function(k){
+    if(!changed(before[k],after[k]))return;
+    const fk=({tier:1,effort:1,xp:1,shins:1,cypherLimit:1})[k]?{t:'num'}:null;
+    lines.push(SCALAR_LABELS[k]+': '+showField(fk,before[k])+' → '+showField(fk,after[k]));
+  });
+  if(changed(before.portrait,after.portrait)){
+    if(!after.portrait)lines.push('Removeu a ilustração');
+    else if(!before.portrait)lines.push('Adicionou uma ilustração');
+    else lines.push('Trocou a ilustração');
+  }
+  if(changed(before.damage,after.damage))lines.push('Marcador de dano: '+(DMG_NAME[before.damage]||showVal(before.damage))+' → '+(DMG_NAME[after.damage]||showVal(after.damage)));
+  ['might','speed','intellect'].forEach(function(stat){
+    const b=(before.pools&&before.pools[stat])||{};
+    const a=(after.pools&&after.pools[stat])||{};
+    [['cur','atual'],['max','reserva'],['edge','margem']].forEach(function(pair){
+      if(!changed(b[pair[0]],a[pair[0]]))return;
+      lines.push(POOL_NAME[stat]+' ('+pair[1]+'): '+showVal(num(b[pair[0]]))+' → '+showVal(num(a[pair[0]])));
+    });
+  });
+  const bu=(before.recovery&&before.recovery.used)||[];
+  const au=(after.recovery&&after.recovery.used)||[];
+  for(let i=0;i<RECOV.length;i++){
+    if(!!bu[i]===!!au[i])continue;
+    lines.push('Recuperação ('+RECOV[i]+'): '+(bu[i]?'usada':'livre')+' → '+(au[i]?'usada':'livre'));
+  }
+  diffSkills(before.skills||[],after.skills||[],lines);
+  LIST_KEYS.forEach(function(key){diffList(key,before[key]||[],after[key]||[],lines)});
+  const known={id:1,portrait:1,pools:1,recovery:1,damage:1,skills:1};
+  Object.keys(SCALAR_LABELS).forEach(function(k){known[k]=1});
+  LIST_KEYS.forEach(function(k){known[k]=1});
+  Object.keys(after).forEach(function(k){if(known[k])return;if(!same(before[k],after[k]))lines.push('Alterou '+k)});
+  return lines;
+}
+
 const App={
   set:function(k,v){cur()[k]=v;scheduleSave()},
-  switchTab:function(t){document.querySelectorAll('.tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===t)});document.querySelectorAll('.tabsec').forEach(function(s){s.hidden=(s.id!=='tab-'+t)})},
+  switchTab:function(t){
+    commit();
+    document.querySelectorAll('.tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===t)});
+    document.querySelectorAll('.tabsec').forEach(function(s){s.hidden=(s.id!=='tab-'+t)});
+  },
 
   setType:function(v){const c=cur();c.type=v;const t=TYPES[v];
     if(t){const apply=confirm('Aplicar as Reservas iniciais de '+v+'?\n\nPotência '+t.might+' · Velocidade '+t.speed+' · Intelecto '+t.intellect+'\n(+6 pontos para distribuir depois.)');
-      if(apply){c.pools.might={cur:t.might,max:t.might,edge:t.mEdge};c.pools.speed={cur:t.speed,max:t.speed,edge:t.sEdge};c.pools.intellect={cur:t.intellect,max:t.intellect,edge:t.iEdge};c.cypherLimit=t.cypher;document.getElementById('f-cypherlimit').value=c.cypherLimit;this.renderList('cyphers')}}
-    scheduleSave();this.renderSentence();this.renderPools();this.renderDamage()},
+      if(apply){noteChange('Aplicou as Reservas iniciais de '+v);c.pools.might={cur:t.might,max:t.might,edge:t.mEdge};c.pools.speed={cur:t.speed,max:t.speed,edge:t.sEdge};c.pools.intellect={cur:t.intellect,max:t.intellect,edge:t.iEdge};c.cypherLimit=t.cypher;document.getElementById('f-cypherlimit').value=c.cypherLimit;this.renderList('cyphers')}}
+    commit();this.renderSentence();this.renderPools();this.renderDamage()},
 
-  adjust:function(stat,d){const p=cur().pools[stat];p.cur=Math.max(0,Math.min(p.max,p.cur+d));scheduleSave();this.renderPools();this.autoDamage()},
-  setMax:function(stat,v){const p=cur().pools[stat];p.max=Math.max(0,v|0);if(p.cur>p.max)p.cur=p.max;scheduleSave();this.renderPools();this.autoDamage()},
-  setEdge:function(stat,v){cur().pools[stat].edge=Math.max(0,v|0);scheduleSave();this.renderPools()},
+  adjust:function(stat,d){const p=cur().pools[stat];p.cur=Math.max(0,Math.min(p.max,p.cur+d));this.autoDamage();commit();this.renderPools()},
+  setMax:function(stat,v){const p=cur().pools[stat];p.max=Math.max(0,v|0);if(p.cur>p.max)p.cur=p.max;this.autoDamage();commit();this.renderPools()},
+  setEdge:function(stat,v){cur().pools[stat].edge=Math.max(0,v|0);commit();this.renderPools()},
 
-  setDamage:function(i){cur().damage=i;scheduleSave();this.renderDamage()},
-  autoDamage:function(){const c=cur();c.damage=['might','speed','intellect'].filter(function(s){return c.pools[s].cur<=0}).length;scheduleSave();this.renderDamage()},
+  setDamage:function(i){cur().damage=i;commit();this.renderDamage()},
+  autoDamage:function(){const c=cur();c.damage=['might','speed','intellect'].filter(function(s){return c.pools[s].cur<=0}).length;this.renderDamage()},
 
-  toggleRecov:function(i){const u=cur().recovery.used;u[i]=!u[i];scheduleSave();this.renderRecov()},
+  toggleRecov:function(i){const u=cur().recovery.used;u[i]=!u[i];commit();this.renderRecov()},
   rollRecovery:function(){const c=cur();const r=Math.floor(Math.random()*6)+1+(+c.tier||1);
     const which=prompt('Recuperou '+r+' ponto(s). Em qual Reserva? (potência / velocidade / intelecto)','potência');
     if(!which)return;const map={'potência':'might','potencia':'might','velocidade':'speed','intelecto':'intellect'};
     const s=map[which.trim().toLowerCase()];if(!s){toast('Reserva não reconhecida');return}
+    noteChange('Rolou recuperação: +'+r+' em '+which.trim());
     const p=c.pools[s];p.cur=Math.min(p.max,p.cur+r);const u=c.recovery.used;const idx=u.indexOf(false);if(idx>=0)u[idx]=true;
-    scheduleSave();this.renderPools();this.autoDamage();this.renderRecov();toast('+'+r+' em '+which)},
-  fullRest:function(){const c=cur();for(const s in c.pools)c.pools[s].cur=c.pools[s].max;c.recovery.used=[false,false,false,false];c.damage=0;scheduleSave();this.renderPools();this.renderDamage();this.renderRecov();toast('Reservas restauradas')},
+    this.autoDamage();commit();this.renderPools();this.renderRecov();toast('+'+r+' em '+which)},
+  fullRest:function(){const c=cur();noteChange('Descanso de 10 horas');for(const s in c.pools)c.pools[s].cur=c.pools[s].max;c.recovery.used=[false,false,false,false];c.damage=0;commit();this.renderPools();this.renderDamage();this.renderRecov();toast('Reservas restauradas')},
 
   portraitClick:function(e){if(e.target.classList.contains('rm'))return;document.getElementById('portraitfile').click()},
   loadPortrait:function(e){const f=e.target.files[0];if(!f)return;const self=this;const rd=new FileReader();
     rd.onload=function(ev){const img=new Image();img.onload=function(){let max=560,w=img.width,h=img.height;if(w>h&&w>max){h=h*max/w;w=max}else if(h>max){w=w*max/h;h=max}
-      const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);cur().portrait=cv.toDataURL('image/jpeg',.84);scheduleSave();self.renderPortrait()};img.src=ev.target.result};
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);cur().portrait=cv.toDataURL('image/jpeg',.84);commit();self.renderPortrait()};img.src=ev.target.result};
     rd.readAsDataURL(f);e.target.value=''},
-  removePortrait:function(e){e.stopPropagation();cur().portrait="";scheduleSave();this.renderPortrait()},
+  removePortrait:function(e){e.stopPropagation();cur().portrait="";commit();this.renderPortrait()},
 
-  addItem:function(key){cur()[key].push(Object.assign({},LISTS[key].blank));scheduleSave();this.renderList(key);this.openModal(key,cur()[key].length-1)},
-  delItem:function(e,key,i){e.stopPropagation();cur()[key].splice(i,1);scheduleSave();this.renderList(key);if(LISTS[key].after)LISTS[key].after()},
+  addItem:function(key){cur()[key].push(Object.assign({},LISTS[key].blank));commit();this.renderList(key);this.openModal(key,cur()[key].length-1)},
+  delItem:function(e,key,i){e.stopPropagation();cur()[key].splice(i,1);commit();this.renderList(key);if(LISTS[key].after)LISTS[key].after()},
   openModal:function(key,i){EDIT={key:key,i:i};const cfg=LISTS[key];document.getElementById('modal-title').textContent=cfg.label;document.getElementById('modal-body').innerHTML=this.buildForm(key,i);document.getElementById('modalback').classList.add('show')},
   modalBackClick:function(e){if(e.target.id==='modalback')this.closeModal()},
-  closeModal:function(){document.getElementById('modalback').classList.remove('show');if(EDIT.key){this.renderList(EDIT.key);if(LISTS[EDIT.key].after)LISTS[EDIT.key].after()}EDIT={key:null,i:-1}},
+  closeModal:function(){const open=document.getElementById('modalback').classList.contains('show');document.getElementById('modalback').classList.remove('show');if(open)commit();if(EDIT.key){this.renderList(EDIT.key);if(LISTS[EDIT.key].after)LISTS[EDIT.key].after()}EDIT={key:null,i:-1}},
   buildForm:function(key,i){const o=cur()[key][i];const cfg=LISTS[key];
     return cfg.fields.map(function(f){const val=esc(o[f.k]||'');let inp;
       if(f.t==='area')inp='<textarea id="mf-'+f.k+'" class="fld" style="min-height:84px" oninput="App.modalSet(\''+f.k+'\',this.value)" placeholder="'+esc(f.ph||'')+'">'+val+'</textarea>';
@@ -561,16 +744,16 @@ const App={
   moveTip:function(e){const t=document.getElementById('tip');const pad=14;const r=t.getBoundingClientRect();let x=e.clientX+pad,y=e.clientY+pad;if(x+r.width>innerWidth)x=e.clientX-r.width-pad;if(y+r.height>innerHeight)y=e.clientY-r.height-pad;t.style.left=Math.max(6,x)+'px';t.style.top=Math.max(6,y)+'px'},
   hideTip:function(){document.getElementById('tip').classList.remove('show')},
 
-  addSkill:function(){cur().skills.push({name:'',level:''});scheduleSave();this.renderSkills()},
-  delSkill:function(i){cur().skills.splice(i,1);scheduleSave();this.renderSkills()},
+  addSkill:function(){cur().skills.push({name:'',level:''});commit();this.renderSkills()},
+  delSkill:function(i){cur().skills.splice(i,1);commit();this.renderSkills()},
   skillName:function(i,v){cur().skills[i].name=v;scheduleSave()},
-  cycleSkill:function(i,k){const s=cur().skills[i];s.level=(s.level===k)?'':k;scheduleSave();this.renderSkills()},
+  cycleSkill:function(i,k){const s=cur().skills[i];s.level=(s.level===k)?'':k;commit();this.renderSkills()},
 
-  switchChar:function(id){DB.current=id;persist();this.renderAll()},
-  newChar:function(){const c=blank();c.name="Novo Aventureiro";DB.list[c.id]=c;DB.current=c.id;persist();this.renderAll();toast('Personagem criado')},
-  deleteChar:function(){if(Object.keys(DB.list).length<=1){toast('É o único personagem');return}if(!confirm('Excluir "'+(cur().name||'sem nome')+'"?'))return;delete DB.list[DB.current];DB.current=Object.keys(DB.list)[0];persist();this.renderAll();toast('Excluído')},
+  switchChar:function(id){if(!id||id===DB.current)return;commit();DB.current=id;snapId=id;snap=snapshotOf(cur());pendingNotes=[];writeDB();this.renderAll()},
+  newChar:function(){commit();const c=blank();c.name="Novo Aventureiro";c.history=[{t:Date.now(),lines:["Personagem criado"]}];DB.list[c.id]=c;DB.current=c.id;snapId=c.id;snap=snapshotOf(c);pendingNotes=[];writeDB();this.renderAll();toast('Personagem criado')},
+  deleteChar:function(){if(Object.keys(DB.list).length<=1){toast('É o único personagem');return}if(!confirm('Excluir "'+(cur().name||'sem nome')+'"?'))return;clearTimeout(saveTimer);saveTimer=null;pendingNotes=[];delete DB.list[DB.current];DB.current=Object.keys(DB.list)[0];snapId=DB.current;snap=snapshotOf(cur());writeDB();this.renderAll();toast('Excluído')},
   exportChar:function(){const c=cur();const blob=new Blob([JSON.stringify(c,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(c.name||'personagem').replace(/[^\w\-]+/g,'_')+'.numenera.json';a.click();toast('Ficha exportada')},
-  importChar:function(e){const f=e.target.files[0];if(!f)return;const self=this;const rd=new FileReader();rd.onload=function(ev){try{const obj=JSON.parse(ev.target.result);const c=Object.assign(blank(),obj,{id:uid()});DB.list[c.id]=c;DB.current=c.id;persist();load();self.renderAll();toast('Ficha importada')}catch(err){toast('Arquivo inválido')}};rd.readAsText(f);e.target.value=''},
+  importChar:function(e){const f=e.target.files[0];if(!f)return;const self=this;const rd=new FileReader();rd.onload=function(ev){try{const obj=JSON.parse(ev.target.result);commit();const c=Object.assign(blank(),obj,{id:uid()});if(!Array.isArray(c.history))c.history=[];c.history.push({t:Date.now(),lines:['Ficha importada']});DB.list[c.id]=c;DB.current=c.id;snapId=c.id;snap=snapshotOf(c);pendingNotes=[];writeDB();load();snapId=DB.current;snap=snapshotOf(cur());self.renderAll();toast('Ficha importada')}catch(err){toast('Arquivo inválido')}};rd.readAsText(f);e.target.value=''},
   refreshSelect:function(){document.getElementById('charsel').innerHTML=Object.values(DB.list).map(function(x){return '<option value="'+x.id+'" '+(x.id===DB.current?'selected':'')+'>'+esc(x.name||'(sem nome)')+'</option>'}).join('')},
 
   renderSentence:function(){const c=cur();document.getElementById('sentence').innerHTML='Eu sou um(a) <b>'+esc(c.descriptor||'____')+'</b> <b>'+esc(c.type||'____')+'</b> que <b>'+esc(c.focus||'____')+'</b>.'},
@@ -599,15 +782,39 @@ const App={
     document.getElementById('f-background').value=c.background;document.getElementById('f-goal').value=c.goal;document.getElementById('f-notes').value=c.notes;
     this.renderSentence();this.renderPortrait();this.renderPools();this.renderDamage();this.renderRecov();this.renderSkills();
     var self=this;['weapons','armors','attacks','abilities','cyphers','artifacts','equipment','buffs'].forEach(function(k){self.renderList(k)});
-    this.renderArmorTotal();this.renderCypherCount()}
+    this.renderArmorTotal();this.renderCypherCount();this.renderHistory()},
+  renderHistory:function(){
+    const el=document.getElementById('history-list');
+    if(!el||!DB.current||!DB.list[DB.current])return;
+    const h=Array.isArray(cur().history)?cur().history:[];
+    const count=document.getElementById('history-count');
+    if(count)count.textContent=h.length?(' · '+h.length):'';
+    if(!h.length){el.innerHTML='<div class="empty">Nenhuma alteração ainda.</div>';return}
+    const fmt=new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    el.innerHTML=h.slice().reverse().map(function(entry){
+      const d=new Date(entry.t);
+      const items=(entry.lines||[]).map(function(line){return '<li>'+esc(line)+'</li>'}).join('');
+      return '<article class="hentry"><time class="when" datetime="'+esc(d.toISOString())+'">'+esc(fmt.format(d))+'</time><ul>'+items+'</ul></article>';
+    }).join('');
+  },
+  clearHistory:function(){
+    const c=cur();
+    if(!c.history||!c.history.length){toast('O histórico já está vazio');return}
+    if(!confirm('Apagar o histórico de "'+(c.name||'sem nome')+'"? A ficha não será alterada.'))return;
+    c.history=[];pendingNotes=[];writeDB();this.renderHistory();toast('Histórico apagado');
+  }
 };
 
 document.getElementById('dl-desc').innerHTML=DESCRIPTORS.map(function(d){return '<option value="'+esc(d)+'">'}).join('');
 document.getElementById('dl-focus').innerHTML=FOCI.map(function(f){return '<option value="'+esc(f)+'">'}).join('');
 var dlsk=document.createElement('datalist');dlsk.id='dl-skills';dlsk.innerHTML=SKILLS_SUGG.map(function(s){return '<option value="'+esc(s)+'">'}).join('');document.body.appendChild(dlsk);
 document.addEventListener('keydown',function(e){if(e.key==='Escape')App.closeModal()});
+window.addEventListener('pagehide',function(){commit()});
 
-load();App.renderAll();
+load();
+snapId=DB.current;
+snap=snapshotOf(cur());
+App.renderAll();
 </script>
 </body>
 </html>
