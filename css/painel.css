@@ -225,6 +225,7 @@ textarea.fld{resize:vertical;min-height:64px;line-height:1.5}
 .xp-note{margin:0;font-size:14.5px;color:var(--ink-soft);line-height:1.45}
 .xp-note b{color:var(--ink);font-weight:600}
 .xp-call{margin:0;font-size:13.5px;color:var(--verm);font-style:italic;line-height:1.4}
+.xp-split{margin:2px 0 0;padding-top:10px;border-top:1px solid var(--line);font-family:"Cinzel",serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass-d)}
 .xp-opt{width:100%;font:inherit;text-align:left;color:var(--ink);background:var(--parch-3);border:1px solid var(--line-2);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:4px}
 .xp-opt:hover{border-color:var(--brass);background:#fff}
 .xp-opt.done,.xp-opt.locked{cursor:default}

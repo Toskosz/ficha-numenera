@@ -150,6 +150,7 @@ Object.assign(App, {
       edge:"Rumo à Perfeição",
       effort:"Esforço Extra",
       options:"Perícias ou Opções",
+      reroll:"Rerrolar",
       skill:"Perícia",
       armor:"Reduzir custo de armadura",
       recovery:"Melhorar recuperação",
@@ -163,6 +164,7 @@ Object.assign(App, {
     else if (XPUI.view === "edge") { body = this.xpEdgeHtml(); foot = this.xpEdgeFoot(); }
     else if (XPUI.view === "effort") { body = this.xpEffortHtml(); foot = this.xpSimpleFoot("effort", "App.buyEffort()"); }
     else if (XPUI.view === "options") { body = this.xpOptionsHtml(); foot = '<button class="btn ghost" type="button" onclick="App.xpGo(\'list\')">Voltar</button>'; }
+    else if (XPUI.view === "reroll") { body = this.xpRerollHtml(); foot = this.xpRerollFoot(); }
     else if (XPUI.view === "skill") { body = this.xpSkillHtml(); foot = this.xpSkillFoot(); }
     else if (XPUI.view === "armor") { body = this.xpArmorHtml(); foot = this.xpSimpleFoot("skill", "App.buyArmorEase()"); }
     else if (XPUI.view === "recovery") { body = this.xpRecoveryHtml(); foot = this.xpSimpleFoot("skill", "App.buyRecovery()"); }
@@ -195,7 +197,19 @@ Object.assign(App, {
         '<span class="top"><span class="t">' + esc(s.title) + '</span><span class="cost">' + cost + "</span></span>" +
         '<span class="d">' + esc(s.desc) + "</span></" + tag + ">";
     }).join("");
+    html += '<p class="xp-split">Uso imediato</p>' +
+      '<button class="xp-opt" type="button" onclick="App.xpGo(\'reroll\')">' +
+      '<span class="top"><span class="t">Rerrolar</span><span class="cost">1 XP</span></span>' +
+      '<span class="d">Rerrola qualquer rolagem. Não conta como passo de Grau e pode ser usado sempre que houver XP.</span></button>';
     return html;
+  },
+  xpRerollHtml: function(){
+    var xp = cur().xp | 0;
+    return '<p class="xp-note">Gaste <b>1 XP</b> para rerrolar qualquer rolagem. O gasto é imediato: não marca passo e não sobe o Grau. Você tem <b>' + xp + " XP</b>.</p>";
+  },
+  xpRerollFoot: function(){
+    var ok = (cur().xp | 0) >= 1;
+    return xpFoot("list", "App.buyReroll()", ok ? "Gastar 1 XP" : "Sem XP", !ok);
   },
   xpPoolsHtml: function(){
     var c = cur();
@@ -313,6 +327,18 @@ Object.assign(App, {
     XPUI.view = "list";
     this.renderXpModal();
     toast(tiered ? ("Grau " + cur().tier + " — anote as habilidades novas do Tipo e do Foco") : "4 XP gastos");
+  },
+  buyReroll: function(){
+    var c = cur();
+    if ((c.xp | 0) < 1) { toast("Sem XP"); return; }
+    c.xp = (c.xp | 0) - 1;
+    noteChange("Gastou 1 XP · Rerrolou");
+    var xpEl = document.getElementById("f-xp");
+    if (xpEl) xpEl.value = c.xp;
+    commit();
+    this.renderXp();
+    this.renderXpModal();
+    toast("1 XP gasto · rerrolar");
   },
   buyPools: function(){
     if (allocSum() !== 4) { toast("Distribua exatamente 4 pontos"); return; }
