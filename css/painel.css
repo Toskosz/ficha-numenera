@@ -226,6 +226,12 @@ textarea.fld{resize:vertical;min-height:64px;line-height:1.5}
 .hentry .when{font-family:"JetBrains Mono",monospace;font-size:11.5px;letter-spacing:.03em;color:var(--brass-d)}
 .hentry ul{margin:6px 0 0;padding-left:18px}
 .hentry li{font-size:14.5px;line-height:1.45}
+.hentry li.hdiff{list-style:none;margin:2px 0 2px -14px}
+.hdiff-k{font-weight:600;margin-bottom:4px}
+.hdiff-ln{font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.45;padding:3px 8px;border-radius:4px;white-space:pre-wrap;word-break:break-word}
+.hdiff-ln.del{background:rgba(168,57,44,.12);color:var(--verm-d)}
+.hdiff-ln.add{background:rgba(47,125,94,.14);color:#1e5c43}
+.hdiff-gap{height:8px}
 @media(max-width:1040px){.grid{grid-template-columns:1fr}.hero{grid-template-columns:170px 1fr}}
 @media(max-width:760px){.gearbar{grid-template-columns:1fr}}
 @media(max-width:640px){.hero{grid-template-columns:1fr}.portrait{aspect-ratio:16/10;max-height:230px;width:60%;margin:0 auto}.twocol,.story-grid{grid-template-columns:1fr}.subcol{gap:24px}.dtf{grid-template-columns:1fr}.meta{flex-wrap:wrap}.meta .box{flex:1 1 28%}.brand h1{font-size:18px}}

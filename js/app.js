@@ -128,7 +128,7 @@ Object.assign(App, {
     var fmt = new Intl.DateTimeFormat("pt-BR", {day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit", second:"2-digit"});
     el.innerHTML = h.slice().reverse().map(function(entry){
       var d = new Date(entry.t);
-      var items = (entry.lines || []).map(function(line){ return "<li>" + esc(line) + "</li>"; }).join("");
+      var items = (entry.lines || []).map(historyLineHtml).join("");
       return '<article class="hentry"><time class="when" datetime="' + esc(d.toISOString()) + '">' + esc(fmt.format(d)) + "</time><ul>" + items + "</ul></article>";
     }).join("");
   },

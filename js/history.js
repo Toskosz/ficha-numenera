@@ -41,6 +41,185 @@ function showField(f, v){
   return showVal(v);
 }
 
+function textTooWide(v){
+  if (v == null || typeof v === "object") return false;
+  return String(v).replace(/\s+/g, " ").trim().length > 80;
+}
+
+function textTokens(s){
+  return String(s == null ? "" : s).split(/(\s+)/).filter(function(t){ return t.length; });
+}
+
+function copyFrontier(v){
+  var o = {};
+  for (var k in v) o[k] = v[k];
+  return o;
+}
+
+function myersDiff(a, b){
+  var N = a.length, M = b.length;
+  if (!N && !M) return [];
+  if (!N) return b.map(function(s){ return {t:"+", s:s}; });
+  if (!M) return a.map(function(s){ return {t:"-", s:s}; });
+  var max = N + M, limit = 400;
+  var v = {1: 0};
+  var trace = [];
+  for (var d = 0; d <= max; d++) {
+    if (d > limit) return null;
+    for (var k = -d; k <= d; k += 2) {
+      var x;
+      if (k === -d || (k !== d && (v[k - 1] || 0) < (v[k + 1] || 0))) x = v[k + 1] || 0;
+      else x = (v[k - 1] || 0) + 1;
+      var y = x - k;
+      while (x < N && y < M && a[x] === b[y]) { x++; y++; }
+      v[k] = x;
+      if (x >= N && y >= M) {
+        trace.push(copyFrontier(v));
+        return backtrackDiff(trace, a, b);
+      }
+    }
+    trace.push(copyFrontier(v));
+  }
+  return null;
+}
+
+function backtrackDiff(trace, a, b){
+  var x = a.length, y = b.length, edits = [];
+  for (var d = trace.length - 1; d >= 0; d--) {
+    var fv = trace[d];
+    var k = x - y;
+    var prevK = (k === -d || (k !== d && (fv[k - 1] || 0) < (fv[k + 1] || 0))) ? k + 1 : k - 1;
+    var prevX = fv[prevK] || 0;
+    var prevY = prevX - prevK;
+    while (x > prevX && y > prevY) {
+      edits.push({t:"=", s:a[x - 1]});
+      x--; y--;
+    }
+    if (d > 0) edits.push(x === prevX ? {t:"+", s:b[y - 1]} : {t:"-", s:a[x - 1]});
+    x = prevX;
+    y = prevY;
+  }
+  edits.reverse();
+  return edits;
+}
+
+function commonEnds(a, b){
+  var p = 0, s = 0;
+  while (p < a.length && p < b.length && a[p] === b[p]) p++;
+  while (s < a.length - p && s < b.length - p && a[a.length - 1 - s] === b[b.length - 1 - s]) s++;
+  return {p:p, s:s};
+}
+
+function tidySnippet(s){
+  return s.replace(/[ \t\f\v]+/g, " ").replace(/ ?\n ?/g, "\n").trim();
+}
+
+function markSnippet(s, pre, post){
+  var max = 360;
+  if (s.length > max) {
+    var keep = Math.floor((max - 1) / 2);
+    s = s.slice(0, keep) + "…" + s.slice(s.length - keep);
+  }
+  if (pre) s = "… " + s;
+  if (post) s = s + " …";
+  return s;
+}
+
+function groupHunks(ops){
+  var CONTEXT = 5, n = ops.length, idxs = [], hunks = [];
+  for (var i = 0; i < n; i++) if (ops[i].t !== "=") idxs.push(i);
+  if (!idxs.length) return hunks;
+  function wordsBetween(from, to){
+    var c = 0;
+    for (var i = from + 1; i < to; i++) if (ops[i].t === "=" && /\S/.test(ops[i].s)) c++;
+    return c;
+  }
+  var ranges = [], rs = idxs[0], re = idxs[0];
+  for (var j = 1; j < idxs.length; j++) {
+    if (wordsBetween(re, idxs[j]) <= CONTEXT * 2) re = idxs[j];
+    else { ranges.push([rs, re]); rs = re = idxs[j]; }
+  }
+  ranges.push([rs, re]);
+  ranges.forEach(function(r){
+    var from = r[0], to = r[1], got = 0;
+    while (from > 0 && got < CONTEXT) {
+      var prev = ops[from - 1];
+      if (prev.t !== "=") break;
+      from--;
+      if (/\S/.test(prev.s)) got++;
+    }
+    got = 0;
+    while (to < n - 1 && got < CONTEXT) {
+      var next = ops[to + 1];
+      if (next.t !== "=") break;
+      to++;
+      if (/\S/.test(next.s)) got++;
+    }
+    var del = "", add = "";
+    for (var i = from; i <= to; i++) {
+      if (ops[i].t !== "+") del += ops[i].s;
+      if (ops[i].t !== "-") add += ops[i].s;
+    }
+    var dv = tidySnippet(del), av = tidySnippet(add);
+    if (dv === av) return;
+    hunks.push({
+      del: dv ? markSnippet(dv, from > 0, to < n - 1) : "",
+      add: av ? markSnippet(av, from > 0, to < n - 1) : ""
+    });
+  });
+  return hunks;
+}
+
+function wordHunks(before, after){
+  var a = textTokens(before), b = textTokens(after);
+  var ends = commonEnds(a, b);
+  if (ends.p === a.length && ends.s === 0 && a.length === b.length) return [];
+  var aMid = a.slice(ends.p, a.length - ends.s);
+  var bMid = b.slice(ends.p, b.length - ends.s);
+  var mid = myersDiff(aMid, bMid);
+  if (!mid) {
+    mid = aMid.map(function(s){ return {t:"-", s:s}; }).concat(bMid.map(function(s){ return {t:"+", s:s}; }));
+  }
+  var ops = a.slice(0, ends.p).map(function(s){ return {t:"=", s:s}; })
+    .concat(mid)
+    .concat((ends.s ? a.slice(a.length - ends.s) : []).map(function(s){ return {t:"=", s:s}; }));
+  return groupHunks(ops);
+}
+
+function pushTextDiff(label, before, after, lines){
+  var b = before == null ? "" : String(before);
+  var a = after == null ? "" : String(after);
+  var hunks = wordHunks(b, a);
+  if (!hunks.length) {
+    if (tidySnippet(b) !== tidySnippet(a)) {
+      hunks = [{del:markSnippet(tidySnippet(b), false, false), add:markSnippet(tidySnippet(a), false, false)}];
+    } else if (b !== a) lines.push(label + ": alterou espaços");
+    if (!hunks.length) return;
+  }
+  var rows = [label];
+  hunks.forEach(function(h, i){
+    if (i) rows.push("");
+    if (h.del) rows.push("− " + h.del);
+    if (h.add) rows.push("+ " + h.add);
+  });
+  lines.push("@@" + rows.join("\n"));
+}
+
+function historyLineHtml(line){
+  if (typeof line === "string" && line.slice(0, 2) === "@@") {
+    var rows = line.slice(2).split("\n");
+    var html = '<li class="hdiff"><div class="hdiff-k">' + esc(rows[0]) + "</div>";
+    for (var i = 1; i < rows.length; i++) {
+      var row = rows[i];
+      if (!row) { html += '<div class="hdiff-gap"></div>'; continue; }
+      var cls = row.slice(0, 2) === "− " ? " del" : row.slice(0, 2) === "+ " ? " add" : "";
+      html += '<div class="hdiff-ln' + cls + '">' + esc(row) + "</div>";
+    }
+    return html + "</li>";
+  }
+  return "<li>" + esc(line) + "</li>";
+}
+
 function trimHistory(c){
   if (c.history.length > HIST_MAX) c.history.splice(0, c.history.length - HIST_MAX);
 }
@@ -126,7 +305,9 @@ function pushItemFields(key, item, lines, title){
   (cfg.fields || []).forEach(function(f){
     if (f.k === "name") return;
     if (!changed(cfg.blank[f.k], item[f.k])) return;
-    lines.push(cfg.label + " «" + clip(title) + "» · " + f.l + ": " + showField(f, item[f.k]));
+    var label = cfg.label + " «" + clip(title) + "» · " + f.l;
+    if (textTooWide(item[f.k])) pushTextDiff(label, cfg.blank[f.k], item[f.k], lines);
+    else lines.push(label + ": " + showField(f, item[f.k]));
   });
 }
 
@@ -149,7 +330,9 @@ function diffList(key, before, after, lines){
     (cfg.fields || []).forEach(function(f){
       if (!changed(b[f.k], a[f.k])) return;
       var shown = f.k === "name" ? itemTitle(b.name ? b : a) : shownTitle;
-      lines.push(cfg.label + " «" + clip(shown) + "» · " + f.l + ": " + showField(f, b[f.k]) + " → " + showField(f, a[f.k]));
+      var label = cfg.label + " «" + clip(shown) + "» · " + f.l;
+      if (textTooWide(b[f.k]) || textTooWide(a[f.k])) pushTextDiff(label, b[f.k], a[f.k], lines);
+      else lines.push(label + ": " + showField(f, b[f.k]) + " → " + showField(f, a[f.k]));
     });
   }
   for (var j = n; j < after.length; j++) {
@@ -164,6 +347,10 @@ function diffChar(before, after){
   var lines = [];
   Object.keys(SCALAR_LABELS).forEach(function(k){
     if (!changed(before[k], after[k])) return;
+    if (textTooWide(before[k]) || textTooWide(after[k])) {
+      pushTextDiff(SCALAR_LABELS[k], before[k], after[k], lines);
+      return;
+    }
     var fk = ({tier:1, effort:1, xp:1, shins:1, cypherLimit:1})[k] ? {t:"num"} : null;
     lines.push(SCALAR_LABELS[k] + ": " + showField(fk, before[k]) + " → " + showField(fk, after[k]));
   });
