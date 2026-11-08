@@ -112,6 +112,13 @@ Object.assign(App, {
       '<input id="effort-extra" class="fld" type="number" min="0" value="' + EFFORT.extra + '" oninput="App.setEffortExtra(+this.value||0)"></div>' +
       '<div class="effort-math" id="effort-math"></div>';
   },
+  renderEffortLimit: function(){
+    var back = document.getElementById("effortback");
+    if (!back || !back.classList.contains("show") || !EFFORT.stat) return;
+    var maxE = Math.max(0, cur().effort | 0);
+    if (EFFORT.levels > maxE) EFFORT.levels = maxE;
+    this.refreshEffort();
+  },
   closeEffort: function(){
     document.getElementById("effortback").classList.remove("show");
     EFFORT.stat = null;

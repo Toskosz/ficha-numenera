@@ -75,6 +75,7 @@ function persist(){
 }
 
 function scheduleSave(){
+  try { App.paintSheet(); } catch (err) { console.error(err); }
   clearTimeout(saveTimer);
   saveTimer = setTimeout(persist, 400);
 }
@@ -82,6 +83,7 @@ function scheduleSave(){
 function commit(){
   clearTimeout(saveTimer);
   saveTimer = null;
+  try { App.paintSheet(); } catch (err) { console.error(err); }
   persist();
 }
 

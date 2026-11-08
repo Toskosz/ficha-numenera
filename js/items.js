@@ -59,6 +59,10 @@ Object.assign(App, {
       }
     }
     scheduleSave();
+    if (EDIT.key) {
+      this.renderList(EDIT.key);
+      if (LISTS[EDIT.key].after) LISTS[EDIT.key].after();
+    }
   },
   renderList: function(key){
     var cfg = LISTS[key];
@@ -151,6 +155,9 @@ Object.assign(App, {
   skillDesc: function(i, v){
     cur().skills[i].desc = v;
     scheduleSave();
+    var row = document.querySelectorAll("#skills .skill")[i];
+    var btn = row && row.querySelector(".info");
+    if (btn) btn.classList.toggle("has", String(v || "").trim() !== "");
   },
   cycleSkill: function(i, k){
     var s = cur().skills[i];

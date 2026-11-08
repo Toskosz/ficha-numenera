@@ -81,13 +81,18 @@ Object.assign(App, {
     var a = ensureAdvances(c);
     var n = advanceCount(a);
     var tier = c.tier | 0;
-    var sub = "4 XP cada";
-    if (tier >= 6) sub = "Grau máximo";
-    else if (n === 3) sub = "o próximo sobe o Grau";
-    else if (n > 0) sub = n + "/4 passos";
+    var xp = c.xp | 0;
+    var ready = "4 XP cada";
+    if (tier >= 6) ready = "Grau máximo";
+    else if (xp >= 4 && n === 3) ready = "o próximo sobe o Grau";
+    else if (xp >= 4) ready = "pode gastar";
+    else if (xp > 0) ready = "faltam " + (4 - xp);
+    var sub = (tier < 6 && n > 0 && !(xp >= 4 && n === 3)) ? (n + "/4 · " + ready) : ready;
     el.innerHTML = '<span class="xp-pips">' + XP_STEPS.map(function(s){
       return '<i class="' + (a[s.key] ? "on" : "") + '" title="' + esc(s.title + (a[s.key] ? " — adquirido" : " — 4 XP")) + '"></i>';
     }).join("") + '</span><span class="xp-sub">' + esc(sub) + "</span>";
+    var back = document.getElementById("xpback");
+    if (back && back.classList.contains("show") && XPUI.view === "list") this.renderXpModal();
   },
   openXp: function(){
     ensureAdvances(cur());

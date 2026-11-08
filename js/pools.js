@@ -28,17 +28,36 @@ Object.assign(App, {
     this.renderPools();
   },
   setMax: function(stat, v){
+    if (String(v).trim() === "") return;
     var p = cur().pools[stat];
-    p.max = Math.max(0, v | 0);
+    p.max = Math.max(0, parseInt(v, 10) || 0);
     if (p.cur > p.max) p.cur = p.max;
     this.autoDamage();
-    commit();
-    this.renderPools();
+    scheduleSave();
+    this.patchPool(stat);
   },
   setEdge: function(stat, v){
-    cur().pools[stat].edge = Math.max(0, v | 0);
-    commit();
-    this.renderPools();
+    if (String(v).trim() === "") return;
+    cur().pools[stat].edge = Math.max(0, parseInt(v, 10) || 0);
+    scheduleSave();
+    var back = document.getElementById("effortback");
+    if (back && back.classList.contains("show") && EFFORT.stat === stat) this.refreshEffort();
+  },
+  patchPool: function(stat){
+    var idx = {might:0, speed:1, intellect:2}[stat];
+    var pool = document.querySelectorAll("#pools .pool")[idx];
+    var p = cur().pools[stat];
+    if (!pool || !p) { this.renderPools(); return; }
+    var curEl = pool.querySelector(".cur");
+    var mx = pool.querySelector(".mx");
+    if (curEl) curEl.textContent = p.cur;
+    if (mx) mx.textContent = "/ " + p.max;
+    var fill = pool.querySelector("circle.fill");
+    if (!fill) return;
+    var R = 40, C = 2 * Math.PI * R;
+    var pct = p.max > 0 ? p.cur / p.max : 0;
+    fill.setAttribute("stroke-dasharray", String(C));
+    fill.setAttribute("stroke-dashoffset", String(C * (1 - pct)));
   },
   setDamage: function(i){
     cur().damage = i;
@@ -154,7 +173,7 @@ Object.assign(App, {
       var off = C * (1 - pct);
       var color = "var(" + cssv + ")";
       html += '<div class="pool"><div class="gauge"><svg viewBox="0 0 96 96"><circle class="track" cx="48" cy="48" r="' + R + '" fill="none" stroke-width="8"/><circle class="fill" cx="48" cy="48" r="' + R + '" fill="none" stroke="' + color + '" stroke-width="8" stroke-dasharray="' + C + '" stroke-dashoffset="' + off + '"/></svg><div class="ctr"><span class="cur" style="color:' + color + '">' + p.cur + '</span><span class="mx">/ ' + p.max + "</span></div></div>" +
-        '<div class="pool-info"><span class="pool-name">' + label + '</span><div class="pool-ctrls"><button class="step" onclick="App.adjust(\'' + key + '\',-1)">−</button><button class="step" onclick="App.adjust(\'' + key + '\',1)">+</button><button class="step effort" type="button" onclick="App.openEffort(\'' + key + '\')" title="Gastar esforço nesta Reserva">Esforço</button><span class="miniedit">Reserva <input type="number" value="' + p.max + '" min="0" onchange="App.setMax(\'' + key + '\',+this.value)"></span><span class="miniedit">Margem <input type="number" value="' + p.edge + '" min="0" onchange="App.setEdge(\'' + key + '\',+this.value)"></span></div></div></div>';
+        '<div class="pool-info"><span class="pool-name">' + label + '</span><div class="pool-ctrls"><button class="step" onclick="App.adjust(\'' + key + '\',-1)">−</button><button class="step" onclick="App.adjust(\'' + key + '\',1)">+</button><button class="step effort" type="button" onclick="App.openEffort(\'' + key + '\')" title="Gastar esforço nesta Reserva">Esforço</button><span class="miniedit">Reserva <input type="number" value="' + p.max + '" min="0" oninput="App.setMax(\'' + key + '\',this.value)"></span><span class="miniedit">Margem <input type="number" value="' + p.edge + '" min="0" oninput="App.setEdge(\'' + key + '\',this.value)"></span></div></div></div>';
     });
     document.getElementById("pools").innerHTML = html;
   },

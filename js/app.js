@@ -1,7 +1,78 @@
 Object.assign(App, {
-  set: function(k, v){
-    cur()[k] = v;
+  set: function(k, v, final){
+    var numeric = {tier:1, effort:1, xp:1, shins:1, cypherLimit:1};
+    if (numeric[k]) {
+      if (String(v).trim() === "") {
+        if (!final) return;
+        v = k === "tier" ? 1 : 0;
+      } else {
+        v = parseInt(v, 10);
+        if (!isFinite(v)) return;
+        v = k === "tier" ? Math.min(6, Math.max(1, v)) : Math.max(0, v);
+      }
+    }
+    var c = cur();
+    if (!c) return;
+    c[k] = v;
     scheduleSave();
+    if (final) {
+      var id = {tier:"f-tier", effort:"f-effort", xp:"f-xp", shins:"f-shins", cypherLimit:"f-cypherlimit"}[k];
+      var el = id && document.getElementById(id);
+      if (el && String(el.value) !== String(v)) el.value = v;
+    }
+  },
+  paintSheet: function(){
+    if (this._painting) return;
+    var c = cur();
+    if (!c) return;
+    this._painting = true;
+    try {
+      var active = document.activeElement;
+      function inId(el, id){
+        while (el && el !== document.body) {
+          if (el.id === id) return true;
+          el = el.parentNode;
+        }
+        return false;
+      }
+      var fields = {
+        "f-name": c.name, "f-descriptor": c.descriptor, "f-type": c.type || "", "f-focus": c.focus,
+        "f-tier": c.tier, "f-effort": c.effort, "f-xp": c.xp, "f-shins": c.shins, "f-cypherlimit": c.cypherLimit,
+        "f-other": c.other, "f-background": c.background, "f-goal": c.goal, "f-notes": c.notes
+      };
+      Object.keys(fields).forEach(function(id){
+        var el = document.getElementById(id);
+        if (!el || el === active) return;
+        var next = fields[id] == null ? "" : String(fields[id]);
+        if (el.value !== next) el.value = next;
+      });
+      if (!active || active.id !== "charsel") this.refreshSelect();
+      this.renderSentence();
+      this.renderXp();
+      this.renderDamage();
+      this.renderRecov();
+      this.renderArmorTotal();
+      this.renderCypherCount();
+      if (inId(active, "pools")) ["might", "speed", "intellect"].forEach(function(s){ App.patchPool(s); });
+      else this.renderPools();
+      if (!inId(active, "skills")) this.renderSkills();
+      var self = this;
+      LIST_KEYS.forEach(function(k){ self.renderList(k); });
+      var effortBack = document.getElementById("effortback");
+      if (effortBack && effortBack.classList.contains("show") && EFFORT.stat) {
+        var maxE = Math.max(0, c.effort | 0);
+        if (EFFORT.levels > maxE) EFFORT.levels = maxE;
+        this.refreshEffort();
+      }
+    } finally {
+      this._painting = false;
+    }
+  },
+  resetSheetUi: function(){
+    skillInfoOpen = -1;
+    this.closeXp();
+    this.closeEffort();
+    this.closeModal();
   },
   switchTab: function(t){
     commit();
@@ -11,6 +82,7 @@ Object.assign(App, {
   switchChar: function(id){
     if (!id || id === DB.current) return;
     commit();
+    this.resetSheetUi();
     DB.current = id;
     snapId = id;
     snap = snapshotOf(cur());
@@ -28,6 +100,7 @@ Object.assign(App, {
     snapId = c.id;
     snap = snapshotOf(c);
     pendingNotes = [];
+    this.resetSheetUi();
     writeDB();
     this.renderAll();
     toast("Personagem criado");
@@ -42,6 +115,7 @@ Object.assign(App, {
     DB.current = Object.keys(DB.list)[0];
     snapId = DB.current;
     snap = snapshotOf(cur());
+    this.resetSheetUi();
     writeDB();
     this.renderAll();
     toast("Excluído");
@@ -76,6 +150,7 @@ Object.assign(App, {
         load();
         snapId = DB.current;
         snap = snapshotOf(cur());
+        self.resetSheetUi();
         self.renderAll();
         toast("Ficha importada");
       } catch (err) {
@@ -155,6 +230,15 @@ document.addEventListener("keydown", function(e){
   if (e.key === "Escape") { App.closeXp(); App.closeEffort(); App.closeModal(); }
 });
 window.addEventListener("pagehide", function(){ commit(); });
+window.addEventListener("storage", function(e){
+  if (e.key !== STORE || !e.newValue) return;
+  load();
+  skillInfoOpen = -1;
+  snapId = DB.current;
+  snap = snapshotOf(cur());
+  pendingNotes = [];
+  App.renderAll();
+});
 
 load();
 snapId = DB.current;
