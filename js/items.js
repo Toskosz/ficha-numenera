@@ -1,3 +1,5 @@
+var skillInfoOpen = -1;
+
 Object.assign(App, {
   addItem: function(key){
     cur()[key].push(Object.assign({}, LISTS[key].blank));
@@ -129,11 +131,16 @@ Object.assign(App, {
   },
   addSkill: function(){
     cur().skills.push({name:"", level:"", desc:""});
+    skillInfoOpen = cur().skills.length - 1;
     commit();
     this.renderSkills();
+    var el = document.getElementById("skill-desc");
+    if (el) el.focus();
   },
   delSkill: function(i){
     cur().skills.splice(i, 1);
+    if (skillInfoOpen === i) skillInfoOpen = -1;
+    else if (skillInfoOpen > i) skillInfoOpen--;
     commit();
     this.renderSkills();
   },
@@ -151,18 +158,32 @@ Object.assign(App, {
     commit();
     this.renderSkills();
   },
+  toggleSkillInfo: function(i){
+    skillInfoOpen = skillInfoOpen === i ? -1 : i;
+    this.renderSkills();
+    if (skillInfoOpen === i) {
+      var el = document.getElementById("skill-desc");
+      if (el) el.focus();
+    }
+  },
   renderSkills: function(){
     var c = cur();
     var wrap = document.getElementById("skills");
     if (!c.skills.length) { wrap.innerHTML = '<div class="empty">Nenhuma perícia ainda.</div>'; return; }
     wrap.innerHTML = c.skills.map(function(s, i){
+      var open = skillInfoOpen === i;
+      var has = String(s.desc || "").trim() !== "";
+      var desc = open
+        ? '<textarea id="skill-desc" class="fld skill-desc" spellcheck="false" placeholder="Efeito — o que esta perícia facilita ou altera" oninput="App.skillDesc(' + i + ',this.value)">' + esc(s.desc || "") + "</textarea>"
+        : "";
       return '<div class="skill">' +
         '<input class="fld" value="' + esc(s.name) + '" list="dl-skills" placeholder="ex: Esgueirar" oninput="App.skillName(' + i + ',this.value)">' +
         '<div class="skill-actions"><div class="badges"><button class="bdg ' + (s.level === "T" ? "on" : "") + '" data-k="T" onclick="App.cycleSkill(' + i + ',\'T\')" title="Treinado">T</button>' +
         '<button class="bdg ' + (s.level === "E" ? "on" : "") + '" data-k="E" onclick="App.cycleSkill(' + i + ',\'E\')" title="Especializado">E</button></div>' +
+        '<button class="info' + (has ? " has" : "") + (open ? " on" : "") + '" type="button" onclick="App.toggleSkillInfo(' + i + ')" title="Efeito">i</button>' +
         '<button class="use" type="button" onclick="App.useSkill(' + i + ')" title="Usar com esforço">usar</button>' +
         '<button class="del" onclick="App.delSkill(' + i + ')">✕</button></div>' +
-        '<textarea class="fld skill-desc" placeholder="Efeito — o que esta perícia facilita ou altera" oninput="App.skillDesc(' + i + ',this.value)">' + esc(s.desc || "") + "</textarea></div>";
+        desc + "</div>";
     }).join("");
   }
 });

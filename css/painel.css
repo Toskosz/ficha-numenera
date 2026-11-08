@@ -193,6 +193,10 @@ textarea.fld{resize:vertical;min-height:64px;line-height:1.5}
 .skill .bdg:hover{border-color:var(--brass-d)}
 .skill .bdg.on[data-k="T"]{background:var(--vel);border-color:var(--vel);color:#fff}
 .skill .bdg.on[data-k="E"]{background:var(--brass);border-color:var(--brass);color:#fff}
+.skill .info{flex:none;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line-2);background:var(--parch-3);font-family:"Spectral",serif;font-style:italic;font-weight:600;font-size:16px;line-height:1;color:var(--ink-faint);display:flex;align-items:center;justify-content:center}
+.skill .info:hover{border-color:var(--brass-d);color:var(--brass-d)}
+.skill .info.has{border-color:var(--brass);color:var(--brass-d)}
+.skill .info.on{background:var(--brass);border-color:var(--brass);color:#fff}
 .skill .use{flex:none;height:34px;padding:0 9px;border-radius:8px;border:1px solid var(--brass);background:transparent;color:var(--brass-d);font-family:"Cinzel",serif;font-size:10px;letter-spacing:.06em;text-transform:uppercase}
 .skill .use:hover{background:rgba(156,123,60,.10)}
 .skill .del{flex:none;width:30px;height:34px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink-faint);display:flex;align-items:center;justify-content:center;font-size:13px}
