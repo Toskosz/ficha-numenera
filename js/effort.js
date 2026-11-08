@@ -86,6 +86,9 @@ Object.assign(App, {
     if (source) {
       var bits = [source.label, source.detail].filter(Boolean);
       sourceHtml = '<p class="effort-source">' + esc(bits.join(" · ") || "Aplicar esforço") + "</p>";
+      if (source.effect && String(source.effect).trim()) {
+        sourceHtml += '<p class="effort-effect">' + esc(source.effect) + "</p>";
+      }
     }
 
     var poolHtml = "";
@@ -214,7 +217,8 @@ Object.assign(App, {
         kind: "skills",
         label: "Perícia",
         name: s.name || "sem nome",
-        detail: skillLevelLabel(s.level)
+        detail: skillLevelLabel(s.level),
+        effect: s.desc || ""
       }
     });
   }

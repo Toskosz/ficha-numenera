@@ -136,6 +136,7 @@ textarea.fld{resize:vertical;min-height:64px;line-height:1.5}
 .effort-math .pay{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;font-weight:600}
 .effort-math .hint{margin-top:8px;font-size:12px;color:var(--ink-faint);font-style:italic}
 .effort-source{font-size:14px;color:var(--ink-soft);font-style:italic;margin:0}
+.effort-effect{margin:0;font-size:14.5px;line-height:1.45;color:var(--ink)}
 .effort-pools{display:flex;gap:6px;flex-wrap:wrap}
 .effort-pools .pick{flex:1;min-width:96px;height:auto;padding:8px 8px;font-family:"Cinzel",serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
 .effort-pools .pick.on{border-color:var(--brass);background:rgba(156,123,60,.12);color:var(--ink)}
@@ -184,7 +185,9 @@ textarea.fld{resize:vertical;min-height:64px;line-height:1.5}
 .chip .ic-btn.use:hover{background:rgba(156,123,60,.10);color:var(--brass-d);border-color:var(--brass)}
 .addrow{align-self:flex-start;margin-top:10px;background:transparent;border:1px dashed var(--line-2);color:var(--brass-d);border-radius:var(--r);padding:7px 14px;font-size:13px}
 .addrow:hover{background:var(--parch-3)}
-.skill{display:flex;gap:8px;align-items:center}
+.skill{display:flex;flex-direction:column;gap:6px}
+.skill-actions{display:flex;gap:8px;align-items:center}
+.skill .skill-desc{min-height:52px;padding:7px 10px;font-size:13.5px;line-height:1.45}
 .skill .badges{display:flex;gap:5px;flex:none}
 .skill .bdg{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line-2);background:var(--parch-3);font-family:"Cinzel",serif;font-size:12px;font-weight:700;color:var(--ink-faint);display:flex;align-items:center;justify-content:center;transition:.12s}
 .skill .bdg:hover{border-color:var(--brass-d)}

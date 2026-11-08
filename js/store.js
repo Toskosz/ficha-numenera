@@ -46,6 +46,9 @@ function load(){
     ["skills","weapons","armors","attacks","abilities","cyphers","artifacts","equipment","buffs"].forEach(function(k){
       if (!Array.isArray(ch[k])) ch[k] = [];
     });
+    ch.skills.forEach(function(s){
+      if (s && s.desc == null) s.desc = "";
+    });
     ["other","background","goal","notes"].forEach(function(k){
       if (ch[k] == null) ch[k] = "";
     });

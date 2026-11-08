@@ -281,6 +281,11 @@ function pushSkillAdded(s, lines){
   var line = "Adicionou perícia" + (name ? " " + showVal(name) : "");
   if (s && s.level) line += " (" + skillLevelLabel(s.level) + ")";
   lines.push(line);
+  var desc = s && s.desc != null ? String(s.desc).trim() : "";
+  if (!desc) return;
+  var label = "Perícia «" + clip(name || "sem nome") + "» · Efeito";
+  if (textTooWide(desc)) pushTextDiff(label, "", desc, lines);
+  else lines.push(label + ": " + showVal(desc));
 }
 
 function diffSkills(before, after, lines){
@@ -295,6 +300,11 @@ function diffSkills(before, after, lines){
     var who = a.name || b.name || "sem nome";
     if (changed(b.name, a.name)) lines.push("Perícia «" + clip(who) + "» · Nome: " + showVal(b.name) + " → " + showVal(a.name));
     if (changed(b.level, a.level)) lines.push("Perícia «" + clip(who) + "»: " + skillLevelLabel(b.level) + " → " + skillLevelLabel(a.level));
+    if (changed(b.desc, a.desc)) {
+      var label = "Perícia «" + clip(who) + "» · Efeito";
+      if (textTooWide(b.desc) || textTooWide(a.desc)) pushTextDiff(label, b.desc, a.desc, lines);
+      else lines.push(label + ": " + showVal(b.desc) + " → " + showVal(a.desc));
+    }
   }
   for (var j = n; j < after.length; j++) pushSkillAdded(after[j], lines);
   for (var k = n; k < before.length; k++) lines.push("Removeu perícia " + showVal(before[k].name || "sem nome"));

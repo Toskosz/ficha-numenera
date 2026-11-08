@@ -1,4 +1,4 @@
-var XPUI = {view:"list", alloc:{might:0, speed:0, intellect:0}, edge:"", skill:""};
+var XPUI = {view:"list", alloc:{might:0, speed:0, intellect:0}, edge:"", skill:"", skillDesc:""};
 
 var XP_STEPS = [
   {key:"pools", view:"pools", title:"Aumentar Capacidades", desc:"Adiciona 4 pontos novos para distribuir entre Potência, Velocidade e Intelecto."},
@@ -106,7 +106,7 @@ Object.assign(App, {
     XPUI.view = view;
     if (view === "pools") XPUI.alloc = {might:0, speed:0, intellect:0};
     if (view === "edge") XPUI.edge = "";
-    if (view === "skill") XPUI.skill = "";
+    if (view === "skill") { XPUI.skill = ""; XPUI.skillDesc = ""; }
     this.renderXpModal();
   },
   xpAlloc: function(stat, d){
@@ -121,6 +121,9 @@ Object.assign(App, {
     if (!cur().pools[stat]) return;
     XPUI.edge = stat;
     this.renderXpModal();
+  },
+  xpSkillDesc: function(v){
+    XPUI.skillDesc = v;
   },
   xpSkillInput: function(v){
     XPUI.skill = v;
@@ -242,6 +245,7 @@ Object.assign(App, {
     var info = skillOutcome(XPUI.skill);
     return '<p class="xp-note">O nome pode ser novo ou uma perícia que você já tenha.</p>' +
       '<div class="mfield"><label>Perícia</label><input id="xp-skill" class="fld" list="dl-skills" value="' + esc(XPUI.skill) + '" placeholder="ex: Esgueirar" oninput="App.xpSkillInput(this.value)"></div>' +
+      '<div class="mfield"><label>Efeito</label><textarea id="xp-skill-desc" class="fld" style="min-height:72px" placeholder="O que esta perícia facilita ou altera" oninput="App.xpSkillDesc(this.value)">' + esc(XPUI.skillDesc) + "</textarea></div>" +
       '<p class="xp-preview" id="xp-skill-preview">' + esc(info.text) + "</p>";
   },
   xpSkillFoot: function(){
@@ -343,6 +347,7 @@ Object.assign(App, {
   },
   buySkill: function(){
     var name = String(XPUI.skill || "").trim();
+    var desc = String(XPUI.skillDesc || "").trim();
     var info = skillOutcome(name);
     if (!name || info.blocked) { toast(info.blocked || "Diga a perícia"); return; }
     var i = findSkillIndex(name);
@@ -352,9 +357,12 @@ Object.assign(App, {
     else note = "Gastou 4 XP · Perícia " + (cur().skills[i].name || name) + " agora é Treinada";
     var tiered = this.commitAdvance("skill", note, function(c){
       var idx = findSkillIndex(name);
-      if (idx < 0) c.skills.push({name:name, level:"T"});
-      else if (c.skills[idx].level === "T") c.skills[idx].level = "E";
-      else c.skills[idx].level = "T";
+      if (idx < 0) c.skills.push({name:name, level:"T", desc:desc});
+      else {
+        if (c.skills[idx].level === "T") c.skills[idx].level = "E";
+        else c.skills[idx].level = "T";
+        if (desc) c.skills[idx].desc = desc;
+      }
     });
     if (tiered === null) return;
     this.afterAdvance(tiered);

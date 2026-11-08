@@ -128,7 +128,7 @@ Object.assign(App, {
     document.getElementById("tip").classList.remove("show");
   },
   addSkill: function(){
-    cur().skills.push({name:"", level:""});
+    cur().skills.push({name:"", level:"", desc:""});
     commit();
     this.renderSkills();
   },
@@ -139,6 +139,10 @@ Object.assign(App, {
   },
   skillName: function(i, v){
     cur().skills[i].name = v;
+    scheduleSave();
+  },
+  skillDesc: function(i, v){
+    cur().skills[i].desc = v;
     scheduleSave();
   },
   cycleSkill: function(i, k){
@@ -152,11 +156,13 @@ Object.assign(App, {
     var wrap = document.getElementById("skills");
     if (!c.skills.length) { wrap.innerHTML = '<div class="empty">Nenhuma perícia ainda.</div>'; return; }
     wrap.innerHTML = c.skills.map(function(s, i){
-      return '<div class="skill"><input class="fld" style="flex:1" value="' + esc(s.name) + '" list="dl-skills" placeholder="ex: Esgueirar" oninput="App.skillName(' + i + ',this.value)">' +
-        '<div class="badges"><button class="bdg ' + (s.level === "T" ? "on" : "") + '" data-k="T" onclick="App.cycleSkill(' + i + ',\'T\')" title="Treinado">T</button>' +
+      return '<div class="skill">' +
+        '<input class="fld" value="' + esc(s.name) + '" list="dl-skills" placeholder="ex: Esgueirar" oninput="App.skillName(' + i + ',this.value)">' +
+        '<div class="skill-actions"><div class="badges"><button class="bdg ' + (s.level === "T" ? "on" : "") + '" data-k="T" onclick="App.cycleSkill(' + i + ',\'T\')" title="Treinado">T</button>' +
         '<button class="bdg ' + (s.level === "E" ? "on" : "") + '" data-k="E" onclick="App.cycleSkill(' + i + ',\'E\')" title="Especializado">E</button></div>' +
         '<button class="use" type="button" onclick="App.useSkill(' + i + ')" title="Usar com esforço">usar</button>' +
-        '<button class="del" onclick="App.delSkill(' + i + ')">✕</button></div>';
+        '<button class="del" onclick="App.delSkill(' + i + ')">✕</button></div>' +
+        '<textarea class="fld skill-desc" placeholder="Efeito — o que esta perícia facilita ou altera" oninput="App.skillDesc(' + i + ',this.value)">' + esc(s.desc || "") + "</textarea></div>";
     }).join("");
   }
 });
