@@ -1,0 +1,413 @@
+{
+  "id": "cmvybukpu352m",
+  "name": "Spider Murphy",
+  "descriptor": "Inteligente",
+  "type": "Nano",
+  "focus": "Funde Carne e Aço",
+  "portrait": "",
+  "tier": 1,
+  "effort": 2,
+  "xp": 2,
+  "shins": 4,
+  "pools": {
+    "might": {
+      "cur": 7,
+      "max": 12,
+      "edge": 2
+    },
+    "speed": {
+      "cur": 13,
+      "max": 13,
+      "edge": 1
+    },
+    "intellect": {
+      "cur": 5,
+      "max": 17,
+      "edge": 1
+    }
+  },
+  "recovery": {
+    "used": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "damage": 0,
+  "skills": [
+    {
+      "name": "Persuasão",
+      "level": "E"
+    },
+    {
+      "name": "Numenera",
+      "level": "T"
+    },
+    {
+      "name": "",
+      "level": ""
+    }
+  ],
+  "weapons": [
+    {
+      "name": "Lamina de Antebraço ",
+      "weight": "Leve",
+      "dmg": "2",
+      "mod": "",
+      "notes": ""
+    }
+  ],
+  "armors": [
+    {
+      "name": "Gibão de Couro",
+      "armorVal": "2",
+      "potCost": "",
+      "speedRed": "",
+      "notes": ""
+    }
+  ],
+  "attacks": [],
+  "abilities": [
+    {
+      "name": "Varredura",
+      "cost": "2 pontos de Intelecto",
+      "dmg": "",
+      "desc": "Faz uma varredura detalhada em uma área próxima para descobrir informações sobre objetos e criaturas nela contidos"
+    },
+    {
+      "name": "Empurrar",
+      "cost": "2 pts de Intelecto",
+      "dmg": "",
+      "desc": "Lhe dá a habilidade de afastar uma criatura ou objeto do seu tamanho ou menor a uma curta distância."
+    },
+    {
+      "name": "Treinado em perícias de lembrar ou memorizar",
+      "cost": "",
+      "dmg": "",
+      "desc": ""
+    }
+  ],
+  "cypherLimit": 3,
+  "cyphers": [
+    {
+      "name": "Lamina Unica",
+      "level": "6",
+      "effect": "Corta qualquer coisa abaixo do nivel 6. Duração de 10min"
+    },
+    {
+      "name": "Estimulante de Velocidade",
+      "level": "4",
+      "effect": "Adiciona +1 a margem de velocidade durante 1h."
+    }
+  ],
+  "artifacts": [],
+  "equipment": [
+    {
+      "name": "Kit do explorador",
+      "qty": "1",
+      "desc": ""
+    },
+    {
+      "name": "Roupas",
+      "qty": "1",
+      "desc": ""
+    },
+    {
+      "name": "Livro sobre Numenera",
+      "qty": "1",
+      "desc": ""
+    }
+  ],
+  "buffs": [],
+  "other": "",
+  "background": "Spider Murphy não nasceu, ele foi montado e concebido em uma ruína da Terceira Era. Sua compreensão do Numenera não vem de livros, mas de uma sinestesia cibernética, ele ouve e manipula o fluxo de dados do Sintonato e enxerga a eletricidade magnética residual no ar.\n\nPara Murphy, a distinção entre biologia e sintéticos é uma falha de design. Ele alterou o próprio corpo, fundindo uma lâmina de liga molecular diretamente na estrutura óssea e nos servomotores do seu antebraço direito. Em combate, ele hackeia os sistemas de segurança antigos e flanqueia os inimigos, estendendo a lâmina com um comando neural silencioso. Ele opera na periferia do Nono Mundo como um decifrador de dados e executor cirúrgico.\n\n",
+  "goal": "Objetivos de curto prazo:\nSincronização de Firmware: Encontrar um injetor de nanofluídos compatível com o seu implante de antebraço para estabilizar a rejeição de tecido biológico que está causando tremores na lâmina.\n\nExtração de Dados: Invadir o núcleo de dados de uma nave caída na periferia da Região e extrair as chaves de criptografia antes que a Ordem da Verdade isole o local.\n\nLongo Prazo:\nA Matriz Ancestral: Localizar a mítica rede de dados global da Sétima Era, uma \"infraestrutura fantasma\" que ele acredita estar dormente no Sintonato , capaz de transferir sua consciência permanentemente para uma forma puramente sintética e imortal.\n\nAutonomia de Rede: Desenvolver um vírus de código aberto baseado em nanorrobôs para libertar as inteligências artificiais aprisionadas que servem como escravas de energia para os clérigos do Nono Mundo.",
+  "notes": "",
+  "history": [
+    {
+      "t": 1793569380392,
+      "lines": [
+        "Potência (atual): 12 → 11"
+      ]
+    },
+    {
+      "t": 1793569380547,
+      "lines": [
+        "Potência (atual): 11 → 10"
+      ]
+    },
+    {
+      "t": 1793569380702,
+      "lines": [
+        "Potência (atual): 10 → 9"
+      ]
+    },
+    {
+      "t": 1793569380834,
+      "lines": [
+        "Potência (atual): 9 → 8"
+      ]
+    },
+    {
+      "t": 1793569380974,
+      "lines": [
+        "Potência (atual): 8 → 7"
+      ]
+    },
+    {
+      "t": 1793569381115,
+      "lines": [
+        "Potência (atual): 7 → 6"
+      ]
+    },
+    {
+      "t": 1793569381520,
+      "lines": [
+        "Potência (atual): 6 → 5"
+      ]
+    },
+    {
+      "t": 1793569381673,
+      "lines": [
+        "Potência (atual): 5 → 4"
+      ]
+    },
+    {
+      "t": 1793569381825,
+      "lines": [
+        "Potência (atual): 4 → 3"
+      ]
+    },
+    {
+      "t": 1793569382006,
+      "lines": [
+        "Potência (atual): 3 → 2"
+      ]
+    },
+    {
+      "t": 1793569382186,
+      "lines": [
+        "Potência (atual): 2 → 1"
+      ]
+    },
+    {
+      "t": 1793569382404,
+      "lines": [
+        "Marcador de dano: Saudável → Debilitado",
+        "Potência (atual): 1 → 0"
+      ]
+    },
+    {
+      "t": 1793569384683,
+      "lines": [
+        "Recuperação (10 min): livre → usada"
+      ]
+    },
+    {
+      "t": 1793571775347,
+      "lines": [
+        "Marcador de dano: Debilitado → Saudável",
+        "Potência (atual): 0 → 1"
+      ]
+    },
+    {
+      "t": 1793571775583,
+      "lines": [
+        "Potência (atual): 1 → 2"
+      ]
+    },
+    {
+      "t": 1793571776149,
+      "lines": [
+        "Potência (atual): 2 → 3"
+      ]
+    },
+    {
+      "t": 1793571776537,
+      "lines": [
+        "Potência (atual): 3 → 4"
+      ]
+    },
+    {
+      "t": 1793572053453,
+      "lines": [
+        "Recuperação (1 hora): livre → usada"
+      ]
+    },
+    {
+      "t": 1793572055599,
+      "lines": [
+        "Potência (atual): 4 → 5"
+      ]
+    },
+    {
+      "t": 1793572055932,
+      "lines": [
+        "Potência (atual): 5 → 6"
+      ]
+    },
+    {
+      "t": 1793572056372,
+      "lines": [
+        "Potência (atual): 6 → 7"
+      ]
+    },
+    {
+      "t": 1793572057448,
+      "lines": [
+        "Potência (atual): 7 → 8"
+      ]
+    },
+    {
+      "t": 1793572057903,
+      "lines": [
+        "Potência (atual): 8 → 9"
+      ]
+    },
+    {
+      "t": 1793572974278,
+      "lines": [
+        "Potência (atual): 9 → 10"
+      ]
+    },
+    {
+      "t": 1793572974432,
+      "lines": [
+        "Potência (atual): 10 → 11"
+      ]
+    },
+    {
+      "t": 1793572974612,
+      "lines": [
+        "Potência (atual): 11 → 12"
+      ]
+    },
+    {
+      "t": 1793572978581,
+      "lines": [
+        "Recuperação (1 hora): usada → livre"
+      ]
+    },
+    {
+      "t": 1793572979384,
+      "lines": [
+        "Recuperação (10 min): usada → livre"
+      ]
+    },
+    {
+      "t": 1793572980141,
+      "lines": [
+        "Recuperação (1 ação): usada → livre"
+      ]
+    },
+    {
+      "t": 1793576067699,
+      "lines": [
+        "Removeu Cifra «Panaceia»"
+      ]
+    },
+    {
+      "t": 1793581460963,
+      "lines": [
+        "Potência (atual): 12 → 11"
+      ]
+    },
+    {
+      "t": 1793581461492,
+      "lines": [
+        "Potência (atual): 11 → 10"
+      ]
+    },
+    {
+      "t": 1793581462983,
+      "lines": [
+        "Potência (atual): 10 → 9"
+      ]
+    },
+    {
+      "t": 1793582086277,
+      "lines": [
+        "Intelecto (atual): 17 → 16"
+      ]
+    },
+    {
+      "t": 1793582086924,
+      "lines": [
+        "Intelecto (atual): 16 → 15"
+      ]
+    },
+    {
+      "t": 1793582087522,
+      "lines": [
+        "Intelecto (atual): 15 → 14"
+      ]
+    },
+    {
+      "t": 1793582088019,
+      "lines": [
+        "Intelecto (atual): 14 → 13"
+      ]
+    },
+    {
+      "t": 1793583632030,
+      "lines": [
+        "Intelecto (atual): 13 → 12"
+      ]
+    },
+    {
+      "t": 1793583632715,
+      "lines": [
+        "Intelecto (atual): 12 → 11"
+      ]
+    },
+    {
+      "t": 1793584131167,
+      "lines": [
+        "Potência (atual): 9 → 8"
+      ]
+    },
+    {
+      "t": 1793584131792,
+      "lines": [
+        "Potência (atual): 8 → 7"
+      ]
+    },
+    {
+      "t": 1793585142971,
+      "lines": [
+        "Intelecto (atual): 11 → 10"
+      ]
+    },
+    {
+      "t": 1793585143645,
+      "lines": [
+        "Intelecto (atual): 10 → 9"
+      ]
+    },
+    {
+      "t": 1793585144284,
+      "lines": [
+        "Intelecto (atual): 9 → 8"
+      ]
+    },
+    {
+      "t": 1793585144955,
+      "lines": [
+        "Intelecto (atual): 8 → 7"
+      ]
+    },
+    {
+      "t": 1793586508044,
+      "lines": [
+        "Intelecto (atual): 7 → 6"
+      ]
+    },
+    {
+      "t": 1793586508594,
+      "lines": [
+        "Intelecto (atual): 6 → 5"
+      ]
+    }
+  ]
+}
