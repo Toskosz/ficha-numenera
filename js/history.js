@@ -378,7 +378,7 @@ function diffChar(before, after){
   }
   diffSkills(before.skills || [], after.skills || [], lines);
   LIST_KEYS.forEach(function(key){ diffList(key, before[key] || [], after[key] || [], lines); });
-  var known = {id:1, portrait:1, pools:1, recovery:1, damage:1, skills:1};
+  var known = {id:1, portrait:1, pools:1, recovery:1, damage:1, skills:1, advances:1, armorEase:1, recoveryBonus:1};
   Object.keys(SCALAR_LABELS).forEach(function(k){ known[k] = 1; });
   LIST_KEYS.forEach(function(k){ known[k] = 1; });
   Object.keys(after).forEach(function(k){

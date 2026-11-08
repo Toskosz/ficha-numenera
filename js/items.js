@@ -94,6 +94,12 @@ Object.assign(App, {
     var sum = (cur().armors || []).reduce(function(a, o){ return a + (parseInt(o.armorVal) || 0); }, 0);
     var el = document.getElementById("armor-total");
     if (el) el.textContent = sum;
+    var hint = document.getElementById("armor-ease");
+    if (hint) {
+      var ease = Math.max(0, cur().armorEase | 0);
+      hint.hidden = !ease;
+      hint.textContent = ease ? ("Alívio de armadura −" + ease + " já descontado no custo de Potência por hora e na redução de Velocidade. No editor, os números continuam sendo os da peça.") : "";
+    }
   },
   showTip: function(e, key, i){
     var cfg = LISTS[key];

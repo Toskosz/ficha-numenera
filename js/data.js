@@ -24,6 +24,18 @@ var DMG_NAME = ["Saudável", "Debilitado", "Incapacitado", "Morto"];
 var LIST_KEYS = ["weapons","armors","attacks","abilities","cyphers","artifacts","equipment","buffs"];
 var USABLE_LISTS = {weapons:1, attacks:1, abilities:1};
 
+function armorEaseOf(){
+  try { return Math.max(0, (cur().armorEase | 0)); }
+  catch (e) { return 0; }
+}
+
+function easedArmorStat(raw){
+  if (raw == null || String(raw).trim() === "") return "";
+  var n = parseInt(raw, 10);
+  if (!isFinite(n)) return String(raw);
+  return String(Math.max(0, n - armorEaseOf()));
+}
+
 var LISTS = {
   weapons:{label:"Arma", blank:{name:"",weight:"Média",dmg:"4",mod:"",notes:""},
     fields:[{k:"name",l:"Nome",t:"text",ph:"ex: Espada de lâmina larga"},{k:"weight",l:"Categoria",t:"select",opts:["Leve","Média","Pesada"]},{k:"dmg",l:"Dano",t:"num"},{k:"mod",l:"Modificador / perícia",t:"text",ph:"+0, treinado…"},{k:"notes",l:"Notas / propriedades",t:"area"}],
@@ -31,8 +43,19 @@ var LISTS = {
     tip:function(o){return [["Categoria",o.weight],["Dano",o.dmg],["Modificador",o.mod]]}, full:function(o){return o.notes}},
   armors:{label:"Armadura", blank:{name:"",armorVal:"1",potCost:"",speedRed:"",notes:""},
     fields:[{k:"name",l:"Nome",t:"text",ph:"ex: Gibão de couro"},{k:"armorVal",l:"Armadura (pontos)",t:"num"},{k:"potCost",l:"Custo de Potência por hora",t:"num"},{k:"speedRed",l:"Redução da Reserva de Velocidade",t:"num"},{k:"notes",l:"Notas",t:"area"}],
-    name:function(o){return o.name||"Armadura"}, sub:function(o){return [o.potCost?("Pot/h "+o.potCost):"",o.speedRed?("Vel −"+o.speedRed):""].filter(Boolean).join("  ·  ")}, num:function(o){return o.armorVal}, numL:"armad.", numClass:"blue",
-    tip:function(o){return [["Armadura",o.armorVal],["Custo Potência/h",o.potCost],["Redução Velocidade",o.speedRed]]}, full:function(o){return o.notes}, after:function(){App.renderArmorTotal()}},
+    name:function(o){return o.name||"Armadura"}, sub:function(o){
+      var pot = easedArmorStat(o.potCost), vel = easedArmorStat(o.speedRed);
+      return [pot !== "" ? ("Pot/h " + pot) : "", vel !== "" ? ("Vel −" + vel) : ""].filter(Boolean).join("  ·  ");
+    }, num:function(o){return o.armorVal}, numL:"armad.", numClass:"blue",
+    tip:function(o){
+      var ease = armorEaseOf();
+      var pot = easedArmorStat(o.potCost), vel = easedArmorStat(o.speedRed);
+      return [
+        ["Armadura", o.armorVal],
+        ["Custo Potência/h", pot !== "" ? (pot + (ease && String(o.potCost) !== pot ? " (base " + o.potCost + ")" : "")) : ""],
+        ["Redução Velocidade", vel !== "" ? (vel + (ease && String(o.speedRed) !== vel ? " (base " + o.speedRed + ")" : "")) : ""]
+      ];
+    }, full:function(o){return o.notes}, after:function(){App.renderArmorTotal()}},
   attacks:{label:"Ataque", blank:{name:"",cost:"",dmg:"",mod:"",desc:""},
     fields:[{k:"name",l:"Nome",t:"text",ph:"ex: Estocada"},{k:"dmg",l:"Dano",t:"num"},{k:"mod",l:"Modificador",t:"text",ph:"+0, dif. −1…"},{k:"cost",l:"Custo (opcional)",t:"text",ph:"ex: 1 p. Velocidade"},{k:"desc",l:"Descrição / efeito",t:"area"}],
     name:function(o){return o.name||"Ataque"}, sub:function(o){return [o.cost,o.mod?("mod "+o.mod):""].filter(Boolean).join("  ·  ")}, num:function(o){return o.dmg}, numL:"dano", numClass:"",

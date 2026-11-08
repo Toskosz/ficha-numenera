@@ -58,7 +58,8 @@ Object.assign(App, {
   },
   rollRecovery: function(){
     var c = cur();
-    var r = Math.floor(Math.random() * 6) + 1 + (+c.tier || 1);
+    var bonus = Math.max(0, c.recoveryBonus | 0);
+    var r = Math.floor(Math.random() * 6) + 1 + (+c.tier || 1) + bonus;
     var which = prompt("Recuperou " + r + " ponto(s). Em qual Reserva? (potência / velocidade / intelecto)", "potência");
     if (!which) return;
     var map = {"potência":"might", "potencia":"might", "velocidade":"speed", "intelecto":"intellect"};
@@ -168,6 +169,11 @@ Object.assign(App, {
   },
   renderRecov: function(){
     var c = cur();
+    var bonus = Math.max(0, c.recoveryBonus | 0);
+    var formula = document.getElementById("recov-formula");
+    if (formula) formula.innerHTML = "Recupera <b>1d6 + Grau" + (bonus ? " +" + bonus : "") + "</b>, divididos como quiser.";
+    var roll = document.getElementById("recov-roll");
+    if (roll) roll.textContent = "Rolar 1d6 + Grau" + (bonus ? " +" + bonus : "");
     document.getElementById("recrow").innerHTML = RECOV.map(function(r, i){
       return '<div class="rectile ' + (c.recovery.used[i] ? "used" : "") + '" onclick="App.toggleRecov(' + i + ')"><span class="t">' + r + "</span>" + (c.recovery.used[i] ? "usada" : "livre") + "</div>";
     }).join("");

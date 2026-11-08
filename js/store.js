@@ -13,6 +13,8 @@ function blank(){
   return {
     id:uid(), name:"", descriptor:"", type:"", focus:"", portrait:"",
     tier:1, effort:1, xp:0, shins:0,
+    advances:{pools:false, edge:false, effort:false, skill:false},
+    armorEase:0, recoveryBonus:0,
     pools:{
       might:{cur:11, max:11, edge:1},
       speed:{cur:10, max:10, edge:1},
@@ -48,6 +50,12 @@ function load(){
       if (ch[k] == null) ch[k] = "";
     });
     if (ch.shins == null) ch.shins = 0;
+    if (ch.armorEase == null) ch.armorEase = 0;
+    if (ch.recoveryBonus == null) ch.recoveryBonus = 0;
+    if (!ch.advances || typeof ch.advances !== "object" || Array.isArray(ch.advances)) {
+      ch.advances = {pools:false, edge:false, effort:false, skill:false};
+    }
+    ["pools","edge","effort","skill"].forEach(function(k){ ch.advances[k] = ch.advances[k] === true; });
     if (!Array.isArray(ch.history)) ch.history = [];
   }
 }

@@ -100,6 +100,7 @@ Object.assign(App, {
     document.getElementById("f-tier").value = c.tier;
     document.getElementById("f-effort").value = c.effort;
     document.getElementById("f-xp").value = c.xp;
+    this.renderXp();
     document.getElementById("f-shins").value = c.shins;
     document.getElementById("f-cypherlimit").value = c.cypherLimit;
     document.getElementById("f-other").value = c.other;
@@ -151,7 +152,7 @@ dlsk.id = "dl-skills";
 dlsk.innerHTML = SKILLS_SUGG.map(function(s){ return '<option value="' + esc(s) + '">'; }).join("");
 document.body.appendChild(dlsk);
 document.addEventListener("keydown", function(e){
-  if (e.key === "Escape") { App.closeEffort(); App.closeModal(); }
+  if (e.key === "Escape") { App.closeXp(); App.closeEffort(); App.closeModal(); }
 });
 window.addEventListener("pagehide", function(){ commit(); });
 

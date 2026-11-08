@@ -78,9 +78,14 @@
           <div class="cell"><span class="lbl">Foco (que…)</span><input class="fld" id="f-focus" list="dl-focus" placeholder="ex: Domina o Armamento" oninput="App.set('focus',this.value);App.renderSentence()"></div>
         </div>
         <div class="meta">
-          <div class="box"><span class="lbl">Grau</span><input id="f-tier" type="number" min="1" max="6" oninput="App.set('tier',+this.value||1);App.renderRecov()"></div>
+          <div class="box"><span class="lbl">Grau</span><input id="f-tier" type="number" min="1" max="6" oninput="App.set('tier',+this.value||1);App.renderRecov();App.renderXp()"></div>
           <div class="box eff"><span class="lbl">Esforço</span><input id="f-effort" type="number" min="0" oninput="App.set('effort',+this.value||0)"></div>
-          <div class="box"><span class="lbl">XP</span><input id="f-xp" type="number" min="0" oninput="App.set('xp',+this.value||0)"></div>
+          <div class="box xp" id="xp-box">
+            <span class="lbl">XP</span>
+            <input id="f-xp" type="number" min="0" oninput="App.set('xp',Math.max(0,+this.value||0));App.renderXp()">
+            <div class="xp-meta" id="xp-meta"></div>
+            <button class="xp-spend" type="button" onclick="App.openXp()" title="Cada passo custa 4 XP. Quatro passos, um de cada tipo, sobem o Grau.">Gastar</button>
+          </div>
           <div class="box shins"><span class="lbl">Shins</span><input id="f-shins" type="number" min="0" oninput="App.set('shins',+this.value||0)"></div>
           <div class="box armor"><span class="lbl">Armadura</span><span class="val" id="armor-total">0</span></div>
         </div>
@@ -99,6 +104,7 @@
       <div class="panel mini">
         <h3 class="ptitle"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>Armadura</h3>
         <div class="rows" id="list-armors"></div>
+        <div class="skill-hint" id="armor-ease" hidden></div>
         <button class="addrow" onclick="App.addItem('armors')">+ armadura</button>
       </div>
       <div class="panel mini">
@@ -121,10 +127,10 @@
         <div class="panel">
           <h3 class="ptitle"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>Rolagens de Recuperação</h3>
           <div class="recov">
-            <div class="recline"><span>Recupera <b>1d6 + Grau</b>, divididos como quiser.</span></div>
+            <div class="recline"><span id="recov-formula">Recupera <b>1d6 + Grau</b>, divididos como quiser.</span></div>
             <div class="recrow" id="recrow"></div>
             <div class="recline">
-              <button class="btn" style="flex:1;justify-content:center" onclick="App.rollRecovery()">Rolar 1d6 + Grau</button>
+              <button class="btn" id="recov-roll" style="flex:1;justify-content:center" onclick="App.rollRecovery()">Rolar 1d6 + Grau</button>
               <button class="btn ghost" style="flex:1;justify-content:center" onclick="App.fullRest()">Descanso (10h)</button>
             </div>
           </div>
@@ -225,6 +231,14 @@
   </div>
 </div>
 
+<div class="modal-back" id="xpback" onclick="App.xpBackClick(event)">
+  <div class="modal xp-modal">
+    <div class="modal-head"><h4 id="xp-title">Gastar XP</h4><button class="x" type="button" onclick="App.closeXp()">✕</button></div>
+    <div class="modal-body" id="xp-body"></div>
+    <div class="modal-foot" id="xp-foot"></div>
+  </div>
+</div>
+
 <div class="modal-back" id="effortback" onclick="App.effortBackClick(event)">
   <div class="modal">
     <div class="modal-head"><h4 id="effort-title">Gastar esforço</h4><button class="x" onclick="App.closeEffort()">✕</button></div>
@@ -244,6 +258,7 @@
 <script src="js/effort.js"></script>
 <script src="js/items.js"></script>
 <script src="js/pools.js"></script>
+<script src="js/xp.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
